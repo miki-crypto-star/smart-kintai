@@ -11,26 +11,31 @@
       background: #f3f4f6;
       color: #111827;
     }
+
     header {
       background: #111827;
       color: #fff;
       padding: 18px 14px;
       text-align: center;
     }
+
     header h1 {
       margin: 0;
       font-size: 22px;
     }
+
     header p {
       margin: 6px 0 0;
       font-size: 13px;
       opacity: .9;
     }
+
     main {
-      max-width: 720px;
+      max-width: 760px;
       margin: 20px auto;
       padding: 0 14px 40px;
     }
+
     .card {
       background: #fff;
       border: 1px solid #e5e7eb;
@@ -39,16 +44,19 @@
       margin-bottom: 16px;
       box-shadow: 0 8px 20px rgba(0,0,0,.06);
     }
+
     h2 {
       margin: 0 0 12px;
       font-size: 18px;
     }
+
     label {
       display: block;
       margin: 12px 0 6px;
       font-size: 13px;
       font-weight: 800;
     }
+
     input {
       width: 100%;
       box-sizing: border-box;
@@ -58,6 +66,7 @@
       font-size: 16px;
       background: #fff;
     }
+
     button {
       width: 100%;
       margin-top: 16px;
@@ -70,9 +79,15 @@
       background: #111827;
       cursor: pointer;
     }
+
     button.worker {
       background: #2563eb;
     }
+
+    button.gray {
+      background: #6b7280;
+    }
+
     .status {
       display: none;
       margin-top: 12px;
@@ -81,18 +96,28 @@
       font-size: 14px;
       line-height: 1.6;
     }
+
     .ok {
       display: block;
       background: #ecfdf5;
       color: #065f46;
       border: 1px solid #a7f3d0;
     }
+
     .ng {
       display: block;
       background: #fef2f2;
       color: #991b1b;
       border: 1px solid #fecaca;
     }
+
+    .warn {
+      display: block;
+      background: #fffbeb;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
     .note {
       font-size: 13px;
       color: #4b5563;
@@ -110,6 +135,9 @@
 <main>
   <section class="card">
     <h2>管理者ログイン</h2>
+    <p class="note">
+      管理者は Firebase Authentication でログインします。
+    </p>
 
     <label>会社コード</label>
     <input id="adminCompanyCode" value="demo" autocomplete="off">
@@ -125,32 +153,44 @@
   </section>
 
   <section class="card">
-    <h2>労働者ログイン</h2>
+    <h2>ワーカーログイン</h2>
     <p class="note">
-      労働者ログインは、次の手順で労働者用Authenticationユーザーを作成してから有効化します。
+      ワーカーは Firebase Authentication を使いません。会社コード・ワーカー共通パスワード・社員コードでログインします。同じ端末では次回から自動ログインします。
     </p>
 
     <label>会社コード</label>
     <input id="workerCompanyCode" value="demo" autocomplete="off">
 
-    <label>メールアドレス</label>
-    <input id="workerEmail" type="email" placeholder="例：emp001@smart-kintai.local">
+    <label>ワーカー共通パスワード</label>
+    <input id="workerPasscode" type="password" value="worker1234">
 
-    <label>パスワード</label>
-    <input id="workerPassword" type="password" placeholder="労働者用パスワード">
+    <label>社員コード または 氏名</label>
+    <input id="workerKeyword" value="EMP001" autocomplete="off">
 
-    <button id="workerLoginBtn" class="worker">労働者画面へ</button>
+    <button id="workerLoginBtn" class="worker">ワーカー画面へ</button>
     <div id="workerStatus" class="status"></div>
+  </section>
+
+  <section class="card">
+    <h2>自動ログインについて</h2>
+    <p class="note">
+      管理者はFirebaseのログイン状態を保持します。ワーカーはこの端末に会社コード・社員コード・氏名を保存し、次回から自動でworker.htmlへ進みます。ログアウトすると保存情報を削除します。
+    </p>
+    <button id="clearWorkerAutoLoginBtn" class="gray">この端末のワーカー自動ログインを解除</button>
+    <div id="clearStatus" class="status"></div>
   </section>
 </main>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+
   import {
     getAuth,
+    onAuthStateChanged,
     signInWithEmailAndPassword,
     signOut
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
   import {
     getDatabase,
     ref,
@@ -174,14 +214,14 @@
 
   const $ = (id) => document.getElementById(id);
 
-  function showStatus(id, message, ok) {
-    const el = $(id);
-    el.textContent = message;
-    el.className = "status " + (ok ? "ok" : "ng");
-  }
-
   function clean(value) {
     return String(value || "").trim();
+  }
+
+  function showStatus(id, message, type = "ok") {
+    const el = $(id);
+    el.textContent = message;
+    el.className = "status " + type;
   }
 
   async function getMember(companyCode, uid) {
@@ -190,27 +230,78 @@
     return snap.val();
   }
 
+  async function getCompany(companyCode) {
+    const snap = await get(ref(db, `companies/${companyCode}`));
+    if (!snap.exists()) return null;
+    return snap.val();
+  }
+
+  function findWorker(workers, keyword) {
+    const key = clean(keyword);
+    if (!workers || !key) return null;
+
+    if (workers[key] && workers[key].active !== false) {
+      return {
+        workerId: key,
+        ...workers[key]
+      };
+    }
+
+    const found = Object.entries(workers).find(([id, w]) => {
+      if (!w || w.active === false) return false;
+      return String(w.code || "") === key || String(w.name || "") === key;
+    });
+
+    if (!found) return null;
+
+    return {
+      workerId: found[0],
+      ...found[1]
+    };
+  }
+
+  function getSavedWorkerSession() {
+    try {
+      return JSON.parse(localStorage.getItem("smart_kintai_worker") || "null");
+    } catch {
+      return null;
+    }
+  }
+
+  function saveWorkerSession(data) {
+    localStorage.setItem("smart_kintai_worker", JSON.stringify(data));
+  }
+
+  function getSavedAdminSession() {
+    try {
+      return JSON.parse(localStorage.getItem("smart_kintai_admin") || "null");
+    } catch {
+      return null;
+    }
+  }
+
   $("adminLoginBtn").addEventListener("click", async () => {
     const companyCode = clean($("adminCompanyCode").value);
     const email = clean($("adminEmail").value);
     const password = $("adminPassword").value;
 
     if (!companyCode || !email || !password) {
-      showStatus("adminStatus", "会社コード・メールアドレス・パスワードを入力してください。", false);
+      showStatus("adminStatus", "会社コード・メールアドレス・パスワードを入力してください。", "ng");
       return;
     }
 
     try {
-      showStatus("adminStatus", "ログイン確認中です。", true);
+      showStatus("adminStatus", "管理者ログイン確認中です。", "ok");
 
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const uid = userCredential.user.uid;
 
       const member = await getMember(companyCode, uid);
 
-      if (!member || member.active !== true || member.role !== "admin") {
+      if (!member || member.role !== "admin" || member.active !== true) {
         await signOut(auth);
-        showStatus("adminStatus", "このユーザーは管理者として登録されていません。", false);
+        localStorage.removeItem("smart_kintai_admin");
+        showStatus("adminStatus", "このユーザーは管理者として登録されていません。", "ng");
         return;
       }
 
@@ -226,49 +317,95 @@
 
     } catch (e) {
       console.error(e);
-      showStatus("adminStatus", "ログインできません。メール・パスワード・Rules・初期JSONを確認してください。", false);
+      showStatus("adminStatus", "管理者ログインできません。メール・パスワード・Firebase Rulesを確認してください。", "ng");
     }
   });
 
   $("workerLoginBtn").addEventListener("click", async () => {
     const companyCode = clean($("workerCompanyCode").value);
-    const email = clean($("workerEmail").value);
-    const password = $("workerPassword").value;
+    const passcode = $("workerPasscode").value;
+    const keyword = clean($("workerKeyword").value);
 
-    if (!companyCode || !email || !password) {
-      showStatus("workerStatus", "会社コード・メールアドレス・パスワードを入力してください。", false);
+    if (!companyCode || !passcode || !keyword) {
+      showStatus("workerStatus", "会社コード・ワーカー共通パスワード・社員コードまたは氏名を入力してください。", "ng");
       return;
     }
 
     try {
-      showStatus("workerStatus", "ログイン確認中です。", true);
+      showStatus("workerStatus", "ワーカーログイン確認中です。", "ok");
 
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const uid = userCredential.user.uid;
+      const company = await getCompany(companyCode);
 
-      const member = await getMember(companyCode, uid);
-
-      if (!member || member.active !== true || member.role !== "worker") {
-        await signOut(auth);
-        showStatus("workerStatus", "このユーザーは労働者として登録されていません。", false);
+      if (!company) {
+        showStatus("workerStatus", "会社コードが見つかりません。", "ng");
         return;
       }
 
-      localStorage.setItem("smart_kintai_worker", JSON.stringify({
-        companyCode,
-        uid,
-        email,
-        role: "worker",
-        workerId: member.workerId || "",
-        loginAt: new Date().toISOString()
-      }));
+      const savedPasscode = company.settings?.workerLogin?.passcode || "";
 
-      location.href = `worker.html?company=${encodeURIComponent(companyCode)}&worker=${encodeURIComponent(member.workerId || "")}`;
+      if (passcode !== savedPasscode) {
+        showStatus("workerStatus", "ワーカー共通パスワードが違います。", "ng");
+        return;
+      }
+
+      const worker = findWorker(company.workers, keyword);
+
+      if (!worker) {
+        showStatus("workerStatus", "労働者が見つかりません。管理者画面で登録状況を確認してください。", "ng");
+        return;
+      }
+
+      if (worker.active === false) {
+        showStatus("workerStatus", "この労働者は無効化されています。", "ng");
+        return;
+      }
+
+      saveWorkerSession({
+        companyCode,
+        workerId: worker.workerId,
+        workerCode: worker.code || worker.workerId,
+        workerName: worker.name || "",
+        role: "worker",
+        loginAt: new Date().toISOString()
+      });
+
+      location.href = `worker.html?company=${encodeURIComponent(companyCode)}&worker=${encodeURIComponent(worker.workerId)}`;
 
     } catch (e) {
       console.error(e);
-      showStatus("workerStatus", "労働者ログインできません。労働者用Authenticationユーザーとmembers登録が必要です。", false);
+      showStatus("workerStatus", "ワーカーログインできません。Firebase Rulesまたは初期データを確認してください。", "ng");
     }
+  });
+
+  $("clearWorkerAutoLoginBtn").addEventListener("click", () => {
+    localStorage.removeItem("smart_kintai_worker");
+    showStatus("clearStatus", "この端末のワーカー自動ログインを解除しました。", "ok");
+  });
+
+  window.addEventListener("load", () => {
+    const workerSession = getSavedWorkerSession();
+
+    if (workerSession?.companyCode && workerSession?.workerId) {
+      location.href = `worker.html?company=${encodeURIComponent(workerSession.companyCode)}&worker=${encodeURIComponent(workerSession.workerId)}`;
+      return;
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+
+      const savedAdmin = getSavedAdminSession();
+      const companyCode = savedAdmin?.companyCode || "demo";
+
+      try {
+        const member = await getMember(companyCode, user.uid);
+
+        if (member?.role === "admin" && member?.active === true) {
+          location.href = `admin.html?company=${encodeURIComponent(companyCode)}`;
+        }
+      } catch (e) {
+        console.warn("自動管理者ログイン確認に失敗しました。", e);
+      }
+    });
   });
 </script>
 </body>
