@@ -125,8 +125,8 @@
     }
   </style>
 </head>
-<body>
 
+<body>
 <header>
   <h1>Smart勤怠</h1>
   <p>勤怠管理DX・総務業務削減・集計自動化</p>
@@ -155,26 +155,27 @@
   <section class="card">
     <h2>ワーカーログイン</h2>
     <p class="note">
-      ワーカーは Firebase Authentication を使いません。会社コード・ワーカー共通パスワード・社員コードでログインします。同じ端末では次回から自動ログインします。
+      ワーカーは Firebase Authentication を使いません。会社コード・氏名・個別パスワードでログインします。
+      同じ端末では次回から自動ログインします。
     </p>
 
     <label>会社コード</label>
     <input id="workerCompanyCode" value="demo" autocomplete="off">
 
-    <label>ワーカー共通パスワード</label>
-    <input id="workerPasscode" type="password" value="worker1234">
+    <label>氏名</label>
+    <input id="workerName" value="山田太郎" autocomplete="off">
 
-    <label>社員コード または 氏名</label>
-    <input id="workerKeyword" value="EMP001" autocomplete="off">
+    <label>個別パスワード</label>
+    <input id="workerPasscode" type="password" value="1111">
 
     <button id="workerLoginBtn" class="worker">ワーカー画面へ</button>
     <div id="workerStatus" class="status"></div>
   </section>
 
   <section class="card">
-    <h2>自動ログインについて</h2>
+    <h2>自動ログイン解除</h2>
     <p class="note">
-      管理者はFirebaseのログイン状態を保持します。ワーカーはこの端末に会社コード・社員コード・氏名を保存し、次回から自動でworker.htmlへ進みます。ログアウトすると保存情報を削除します。
+      この端末に保存されたワーカー自動ログイン情報を削除します。
     </p>
     <button id="clearWorkerAutoLoginBtn" class="gray">この端末のワーカー自動ログインを解除</button>
     <div id="clearStatus" class="status"></div>
@@ -236,20 +237,20 @@
     return snap.val();
   }
 
-  function findWorker(workers, keyword) {
-    const key = clean(keyword);
-    if (!workers || !key) return null;
+  function findWorkerByNameAndPasscode(workers, name, passcode) {
+    const inputName = clean(name);
+    const inputPasscode = String(passcode || "");
 
-    if (workers[key] && workers[key].active !== false) {
-      return {
-        workerId: key,
-        ...workers[key]
-      };
-    }
+    if (!workers || !inputName || !inputPasscode) return null;
 
-    const found = Object.entries(workers).find(([id, w]) => {
-      if (!w || w.active === false) return false;
-      return String(w.code || "") === key || String(w.name || "") === key;
+    const found = Object.entries(workers).find(([workerId, worker]) => {
+      if (!worker) return false;
+      if (worker.active === false) return false;
+
+      const workerName = String(worker.name || "");
+      const workerPasscode = String(worker.loginPasscode || "");
+
+      return workerName === inputName && workerPasscode === inputPasscode;
     });
 
     if (!found) return null;
@@ -268,16 +269,16 @@
     }
   }
 
-  function saveWorkerSession(data) {
-    localStorage.setItem("smart_kintai_worker", JSON.stringify(data));
-  }
-
   function getSavedAdminSession() {
     try {
       return JSON.parse(localStorage.getItem("smart_kintai_admin") || "null");
     } catch {
       return null;
     }
+  }
+
+  function saveWorkerSession(data) {
+    localStorage.setItem("smart_kintai_worker", JSON.stringify(data));
   }
 
   $("adminLoginBtn").addEventListener("click", async () => {
@@ -323,11 +324,11 @@
 
   $("workerLoginBtn").addEventListener("click", async () => {
     const companyCode = clean($("workerCompanyCode").value);
+    const name = clean($("workerName").value);
     const passcode = $("workerPasscode").value;
-    const keyword = clean($("workerKeyword").value);
 
-    if (!companyCode || !passcode || !keyword) {
-      showStatus("workerStatus", "会社コード・ワーカー共通パスワード・社員コードまたは氏名を入力してください。", "ng");
+    if (!companyCode || !name || !passcode) {
+      showStatus("workerStatus", "会社コード・氏名・個別パスワードを入力してください。", "ng");
       return;
     }
 
@@ -341,29 +342,16 @@
         return;
       }
 
-      const savedPasscode = company.settings?.workerLogin?.passcode || "";
-
-      if (passcode !== savedPasscode) {
-        showStatus("workerStatus", "ワーカー共通パスワードが違います。", "ng");
-        return;
-      }
-
-      const worker = findWorker(company.workers, keyword);
+      const worker = findWorkerByNameAndPasscode(company.workers, name, passcode);
 
       if (!worker) {
-        showStatus("workerStatus", "労働者が見つかりません。管理者画面で登録状況を確認してください。", "ng");
-        return;
-      }
-
-      if (worker.active === false) {
-        showStatus("workerStatus", "この労働者は無効化されています。", "ng");
+        showStatus("workerStatus", "氏名または個別パスワードが違います。", "ng");
         return;
       }
 
       saveWorkerSession({
         companyCode,
         workerId: worker.workerId,
-        workerCode: worker.code || worker.workerId,
         workerName: worker.name || "",
         role: "worker",
         loginAt: new Date().toISOString()
