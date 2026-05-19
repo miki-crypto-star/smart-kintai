@@ -11,54 +11,69 @@
       background: #f3f4f6;
       color: #111827;
     }
+
     header {
       background: #111827;
-      color: white;
+      color: #fff;
       padding: 16px;
       text-align: center;
     }
+
     header h1 {
       margin: 0;
       font-size: 22px;
     }
+
     header p {
       margin: 6px 0 0;
       font-size: 13px;
       opacity: .9;
     }
+
     main {
-      max-width: 1100px;
+      max-width: 1180px;
       margin: 20px auto;
       padding: 0 14px 40px;
     }
+
     .card {
-      background: white;
+      background: #fff;
       border: 1px solid #e5e7eb;
       border-radius: 16px;
       padding: 16px;
       margin-bottom: 16px;
       box-shadow: 0 8px 20px rgba(0,0,0,.05);
     }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    h3 {
+      margin: 16px 0 10px;
+      font-size: 16px;
+    }
+
     .row {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
       align-items: end;
     }
+
     .row > div {
       flex: 1;
-      min-width: 180px;
+      min-width: 170px;
     }
-    h2 {
-      margin: 0 0 12px;
-      font-size: 18px;
-    }
+
     label {
       display: block;
       margin: 10px 0 6px;
       font-size: 13px;
       font-weight: 800;
     }
+
     input, select {
       width: 100%;
       box-sizing: border-box;
@@ -66,27 +81,41 @@
       border: 1px solid #d1d5db;
       border-radius: 10px;
       font-size: 15px;
-      background: white;
+      background: #fff;
     }
+
     button {
       border: 0;
       border-radius: 11px;
       padding: 11px 14px;
       font-size: 14px;
       font-weight: 800;
-      color: white;
+      color: #fff;
       background: #111827;
       cursor: pointer;
     }
+
     button.blue {
       background: #2563eb;
     }
+
     button.red {
       background: #dc2626;
     }
+
     button.gray {
       background: #6b7280;
     }
+
+    button.green {
+      background: #16a34a;
+    }
+
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
     .status {
       display: none;
       margin-top: 12px;
@@ -95,24 +124,38 @@
       font-size: 14px;
       line-height: 1.6;
     }
+
     .ok {
       display: block;
       background: #ecfdf5;
       color: #065f46;
       border: 1px solid #a7f3d0;
     }
+
     .ng {
       display: block;
       background: #fef2f2;
       color: #991b1b;
       border: 1px solid #fecaca;
     }
+
     .warn {
       display: block;
       background: #fffbeb;
       color: #92400e;
       border: 1px solid #fde68a;
     }
+
+    .small {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.7;
+    }
+
+    .scroll {
+      overflow-x: auto;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -120,156 +163,275 @@
       background: white;
       margin-top: 10px;
     }
+
     th, td {
       border-bottom: 1px solid #e5e7eb;
       padding: 8px;
       text-align: left;
       white-space: nowrap;
+      vertical-align: middle;
     }
+
     th {
       background: #f9fafb;
     }
-    .scroll {
-      overflow-x: auto;
-    }
-    .small {
-      font-size: 13px;
-      color: #6b7280;
-      line-height: 1.7;
-    }
+
     .pill {
       display: inline-block;
       border-radius: 999px;
       padding: 3px 8px;
       font-size: 12px;
       font-weight: 800;
-      background: #e5e7eb;
     }
-    .active {
+
+    .activePill {
       background: #dcfce7;
       color: #166534;
     }
-    .inactive {
+
+    .inactivePill {
       background: #fee2e2;
       color: #991b1b;
     }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .tabs button {
+      flex: 1;
+      min-width: 120px;
+      background: #e5e7eb;
+      color: #111827;
+      border-radius: 999px;
+    }
+
+    .tabs button.active {
+      background: #111827;
+      color: #fff;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+    }
   </style>
 </head>
-<body>
 
+<body>
 <header>
   <h1>Smart勤怠 管理者画面</h1>
   <p id="headerInfo">確認中...</p>
 </header>
 
 <main>
-  <section class="card">
-    <h2>会社情報</h2>
-    <div id="companyBox" class="small">読み込み中...</div>
-    <div id="mainStatus" class="status"></div>
-  </section>
+  <div class="tabs">
+    <button class="tabBtn active" data-tab="homeSection">本日</button>
+    <button class="tabBtn" data-tab="workersSection">ワーカー管理</button>
+    <button class="tabBtn" data-tab="settingsSection">設定</button>
+  </div>
 
-  <section class="card">
-    <h2>本日の勤怠確認</h2>
-    <p class="small">次の段階で、労働者の出勤・退勤データをここに表示します。</p>
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>社員コード</th>
-            <th>氏名</th>
-            <th>出勤</th>
-            <th>退勤</th>
-            <th>状態</th>
-            <th>備考</th>
-          </tr>
-        </thead>
-        <tbody id="todayBody">
-          <tr>
-            <td colspan="6">まだ打刻データはありません。</td>
-          </tr>
-        </tbody>
-      </table>
+  <section id="homeSection" class="section active">
+    <div class="card">
+      <h2>会社情報</h2>
+      <div id="companyBox" class="small">読み込み中...</div>
+      <div id="mainStatus" class="status"></div>
+    </div>
+
+    <div class="card">
+      <h2>本日の勤怠確認</h2>
+      <button id="reloadTodayBtn" class="gray">再読込</button>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>氏名</th>
+              <th>出勤</th>
+              <th>退勤</th>
+              <th>休憩</th>
+              <th>実働</th>
+              <th>場所確認</th>
+              <th>備考</th>
+            </tr>
+          </thead>
+          <tbody id="todayBody">
+            <tr>
+              <td colspan="7">読み込み中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
-  <section class="card">
-    <h2>労働者管理</h2>
-    <p class="small">
-      完全削除はせず、使わなくなった労働者は active:false で無効化します。
-    </p>
+  <section id="workersSection" class="section">
+    <div class="card">
+      <h2>ワーカー追加 / 編集</h2>
+      <p class="small">
+        ワーカーはFirebase Authenticationを使いません。管理者がここで氏名と個別パスワードを登録します。
+      </p>
 
-    <div class="row">
-      <div>
-        <label>社員コード</label>
-        <input id="workerCode" placeholder="例：EMP002">
+      <input id="editingWorkerId" type="hidden">
+
+      <div class="row">
+        <div>
+          <label>氏名</label>
+          <input id="workerName" placeholder="例：山田太郎">
+        </div>
+
+        <div>
+          <label>個別パスワード</label>
+          <input id="workerPasscode" placeholder="例：1111">
+        </div>
+
+        <div>
+          <label>雇用区分</label>
+          <select id="employmentType">
+            <option value="正社員">正社員</option>
+            <option value="パート">パート</option>
+            <option value="アルバイト">アルバイト</option>
+          </select>
+        </div>
       </div>
-      <div>
-        <label>氏名</label>
-        <input id="workerName" placeholder="例：佐藤花子">
+
+      <div class="row">
+        <div>
+          <label>開始時刻</label>
+          <input id="workStart" type="time" value="08:00">
+        </div>
+
+        <div>
+          <label>終了時刻</label>
+          <input id="workEnd" type="time" value="17:00">
+        </div>
+
+        <div>
+          <button id="saveWorkerBtn" class="blue">ワーカーを保存</button>
+        </div>
+
+        <div>
+          <button id="clearWorkerFormBtn" class="gray">入力欄をクリア</button>
+        </div>
       </div>
-      <div>
-        <label>雇用区分</label>
-        <select id="employmentType">
-          <option value="正社員">正社員</option>
-          <option value="パート">パート</option>
-          <option value="アルバイト">アルバイト</option>
-        </select>
-      </div>
+
+      <div id="workerStatus" class="status"></div>
     </div>
 
-    <div class="row">
-      <div>
-        <label>開始時刻</label>
-        <input id="workStart" type="time" value="08:00">
-      </div>
-      <div>
-        <label>終了時刻</label>
-        <input id="workEnd" type="time" value="17:00">
-      </div>
-      <div>
-        <button id="saveWorkerBtn" class="blue">労働者を追加 / 更新</button>
-      </div>
-    </div>
+    <div class="card">
+      <h2>ワーカー一覧</h2>
+      <p class="small">
+        パスワードは管理者画面で確認できます。削除はせず、使わないワーカーは無効化します。
+      </p>
 
-    <div id="workerStatus" class="status"></div>
+      <button id="reloadWorkersBtn" class="gray">再読込</button>
 
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>社員コード</th>
-            <th>氏名</th>
-            <th>雇用区分</th>
-            <th>勤務時間</th>
-            <th>状態</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody id="workerBody"></tbody>
-      </table>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>氏名</th>
+              <th>個別パスワード</th>
+              <th>雇用区分</th>
+              <th>勤務時間</th>
+              <th>状態</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="workerBody">
+            <tr>
+              <td colspan="6">読み込み中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
-  <section class="card">
-    <h2>次に追加する機能</h2>
-    <p class="small">
-      次のステップで worker.html を追加し、労働者の出勤・退勤打刻、GPS取得、打刻データ保存まで進めます。
-    </p>
-  </section>
+  <section id="settingsSection" class="section">
+    <div class="card">
+      <h2>会社・勤務設定</h2>
 
-  <section class="card">
-    <button id="logoutBtn" class="gray">ログアウト</button>
+      <div class="row">
+        <div>
+          <label>会社名</label>
+          <input id="companyName">
+        </div>
+
+        <div>
+          <label>締め日</label>
+          <select id="closeDay">
+            <option value="end">月末</option>
+            <option value="15">15日</option>
+            <option value="20">20日</option>
+            <option value="25">25日</option>
+          </select>
+        </div>
+
+        <div>
+          <label>保存期間 月</label>
+          <input id="retentionMonths" type="number" min="1" value="3">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>標準開始時刻</label>
+          <input id="defaultStart" type="time" value="08:00">
+        </div>
+
+        <div>
+          <label>標準終了時刻</label>
+          <input id="defaultEnd" type="time" value="17:00">
+        </div>
+
+        <div>
+          <label>長時間未退勤検知 分</label>
+          <input id="longShiftErrorMinutes" type="number" value="720">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>6時間超 休憩控除 分</label>
+          <input id="breakRule6" type="number" value="45">
+        </div>
+
+        <div>
+          <label>8時間超 休憩控除 分</label>
+          <input id="breakRule8" type="number" value="60">
+        </div>
+
+        <div>
+          <label>場所違い判定距離 m</label>
+          <input id="locationMismatchMeters" type="number" value="300">
+        </div>
+      </div>
+
+      <button id="saveSettingsBtn" class="blue">設定を保存</button>
+      <div id="settingsStatus" class="status"></div>
+    </div>
+
+    <div class="card">
+      <button id="logoutBtn" class="gray">ログアウト</button>
+    </div>
   </section>
 </main>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+
   import {
     getAuth,
     onAuthStateChanged,
     signOut
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
   import {
     getDatabase,
     ref,
@@ -294,9 +456,17 @@
 
   const $ = (id) => document.getElementById(id);
 
-  let companyCode = "";
+  let companyCode = "demo";
   let currentUser = null;
   let companyData = null;
+
+  function clean(value) {
+    return String(value || "").trim();
+  }
+
+  function nowIso() {
+    return new Date().toISOString();
+  }
 
   function showStatus(id, message, type = "ok") {
     const el = $(id);
@@ -304,16 +474,34 @@
     el.className = "status " + type;
   }
 
-  function nowIso() {
-    return new Date().toISOString();
+  function pad(n) {
+    return String(n).padStart(2, "0");
   }
 
-  function clean(value) {
-    return String(value || "").trim();
+  function ymd(d = new Date()) {
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 
-  function safeKey(value) {
-    return clean(value).replace(/[.#$/\[\]]/g, "_");
+  function ymdKey(dateStr = ymd()) {
+    return dateStr.replaceAll("-", "");
+  }
+
+  function ymKey(dateStr = ymd()) {
+    return dateStr.slice(0, 7).replace("-", "");
+  }
+
+  function hm(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function minToHHMM(mins) {
+    mins = Number(mins || 0);
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h}:${pad(m)}`;
   }
 
   function getCompanyCodeFromUrlOrStorage() {
@@ -321,8 +509,19 @@
     const fromUrl = params.get("company");
     if (fromUrl) return fromUrl;
 
-    const saved = JSON.parse(localStorage.getItem("smart_kintai_admin") || "null");
-    return saved?.companyCode || "demo";
+    try {
+      const saved = JSON.parse(localStorage.getItem("smart_kintai_admin") || "null");
+      return saved?.companyCode || "demo";
+    } catch {
+      return "demo";
+    }
+  }
+
+  async function checkAdmin(uid) {
+    const snap = await get(ref(db, `companies/${companyCode}/members/${uid}`));
+    if (!snap.exists()) return false;
+    const member = snap.val();
+    return member.role === "admin" && member.active === true;
   }
 
   async function loadCompany() {
@@ -333,27 +532,33 @@
     companyData = snap.val();
   }
 
-  async function checkAdmin(uid) {
-    const snap = await get(ref(db, `companies/${companyCode}/members/${uid}`));
-    if (!snap.exists()) return false;
-
-    const member = snap.val();
-    return member.role === "admin" && member.active === true;
+  function generateWorkerId() {
+    return "w_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
   }
 
   function renderCompany() {
     const info = companyData.companyInfo || {};
     const settings = companyData.settings || {};
 
+    $("headerInfo").textContent = `${info.companyName || companyCode} / 管理者`;
+
     $("companyBox").innerHTML = `
       <p><strong>会社コード：</strong>${info.companyCode || companyCode}</p>
       <p><strong>会社名：</strong>${info.companyName || ""}</p>
-      <p><strong>締め日：</strong>${settings.close?.closeDay === "end" ? "月末" : settings.close?.closeDay + "日"}</p>
+      <p><strong>締め日：</strong>${settings.close?.closeDay === "end" ? "月末" : (settings.close?.closeDay || "") + "日"}</p>
       <p><strong>保存期間：</strong>${settings.close?.retentionMonths || 3}か月</p>
       <p><strong>標準勤務：</strong>${settings.work?.defaultStart || "08:00"}〜${settings.work?.defaultEnd || "17:00"}</p>
     `;
 
-    $("headerInfo").textContent = `${info.companyName || companyCode} / 管理者`;
+    $("companyName").value = info.companyName || "";
+    $("closeDay").value = settings.close?.closeDay || "end";
+    $("retentionMonths").value = settings.close?.retentionMonths || 3;
+    $("defaultStart").value = settings.work?.defaultStart || "08:00";
+    $("defaultEnd").value = settings.work?.defaultEnd || "17:00";
+    $("longShiftErrorMinutes").value = settings.work?.longShiftErrorMinutes || 720;
+    $("breakRule6").value = settings.breakRules?.rule1?.deductMinutes ?? 45;
+    $("breakRule8").value = settings.breakRules?.rule2?.deductMinutes ?? 60;
+    $("locationMismatchMeters").value = settings.gps?.locationMismatchMeters || 300;
   }
 
   function renderWorkers() {
@@ -361,26 +566,27 @@
     const entries = Object.entries(workers);
 
     if (!entries.length) {
-      $("workerBody").innerHTML = `<tr><td colspan="6">労働者が登録されていません。</td></tr>`;
+      $("workerBody").innerHTML = `<tr><td colspan="6">ワーカーが登録されていません。</td></tr>`;
       return;
     }
 
-    $("workerBody").innerHTML = entries.map(([id, w]) => {
+    $("workerBody").innerHTML = entries.map(([workerId, w]) => {
       const isActive = w.active !== false;
+
       return `
         <tr>
-          <td>${w.code || id}</td>
           <td>${w.name || ""}</td>
+          <td>${w.loginPasscode || ""}</td>
           <td>${w.employmentType || ""}</td>
           <td>${w.workStart || ""}〜${w.workEnd || ""}</td>
           <td>
-            <span class="pill ${isActive ? "active" : "inactive"}">
+            <span class="pill ${isActive ? "activePill" : "inactivePill"}">
               ${isActive ? "有効" : "無効"}
             </span>
           </td>
           <td>
-            <button class="gray" data-edit="${id}">編集</button>
-            <button class="${isActive ? "red" : "blue"}" data-toggle="${id}">
+            <button class="gray" data-edit="${workerId}">編集</button>
+            <button class="${isActive ? "red" : "green"}" data-toggle="${workerId}">
               ${isActive ? "無効化" : "有効化"}
             </button>
           </td>
@@ -397,42 +603,51 @@
     });
   }
 
+  function clearWorkerForm() {
+    $("editingWorkerId").value = "";
+    $("workerName").value = "";
+    $("workerPasscode").value = "";
+    $("employmentType").value = "正社員";
+    $("workStart").value = companyData?.settings?.work?.defaultStart || "08:00";
+    $("workEnd").value = companyData?.settings?.work?.defaultEnd || "17:00";
+  }
+
   function fillWorkerForm(workerId) {
     const w = companyData.workers?.[workerId];
     if (!w) return;
 
-    $("workerCode").value = w.code || workerId;
+    $("editingWorkerId").value = workerId;
     $("workerName").value = w.name || "";
+    $("workerPasscode").value = w.loginPasscode || "";
     $("employmentType").value = w.employmentType || "正社員";
     $("workStart").value = w.workStart || companyData.settings?.work?.defaultStart || "08:00";
     $("workEnd").value = w.workEnd || companyData.settings?.work?.defaultEnd || "17:00";
 
-    showStatus("workerStatus", "編集内容をフォームに読み込みました。変更後に保存してください。", "ok");
+    showStatus("workerStatus", "編集内容を読み込みました。変更後に保存してください。", "ok");
   }
 
   async function saveWorker() {
     try {
-      const code = clean($("workerCode").value);
+      const editingWorkerId = clean($("editingWorkerId").value);
       const name = clean($("workerName").value);
+      const loginPasscode = String($("workerPasscode").value || "");
       const employmentType = $("employmentType").value;
       const workStart = $("workStart").value || "08:00";
       const workEnd = $("workEnd").value || "17:00";
 
-      if (!code || !name) {
-        showStatus("workerStatus", "社員コードと氏名を入力してください。", "ng");
+      if (!name || !loginPasscode) {
+        showStatus("workerStatus", "氏名と個別パスワードを入力してください。", "ng");
         return;
       }
 
-      const workerId = safeKey(code);
+      const workerId = editingWorkerId || generateWorkerId();
       const old = companyData.workers?.[workerId] || {};
 
       await update(ref(db, `companies/${companyCode}/workers/${workerId}`), {
-        code,
         name,
+        loginPasscode,
         employmentType,
         active: old.active === false ? false : true,
-        authUid: old.authUid || "",
-        loginEmail: old.loginEmail || "",
         workStart,
         workEnd,
         usualLocation: old.usualLocation || null,
@@ -442,26 +657,22 @@
       });
 
       await update(ref(db, `companies/${companyCode}/logs/edits/${Date.now()}`), {
-        action: "save_worker",
+        action: editingWorkerId ? "update_worker" : "create_worker",
         workerId,
+        workerName: name,
         adminUid: currentUser.uid,
         createdAt: nowIso()
       });
 
-      showStatus("workerStatus", "労働者を保存しました。", "ok");
-
-      $("workerCode").value = "";
-      $("workerName").value = "";
-      $("employmentType").value = "正社員";
-      $("workStart").value = companyData.settings?.work?.defaultStart || "08:00";
-      $("workEnd").value = companyData.settings?.work?.defaultEnd || "17:00";
+      showStatus("workerStatus", editingWorkerId ? "ワーカーを更新しました。" : "ワーカーを追加しました。", "ok");
 
       await loadCompany();
       renderWorkers();
+      clearWorkerForm();
 
     } catch (e) {
       console.error(e);
-      showStatus("workerStatus", "労働者を保存できませんでした。Rulesまたは通信状態を確認してください。", "ng");
+      showStatus("workerStatus", "ワーカーを保存できませんでした。Rulesまたは通信状態を確認してください。", "ng");
     }
   }
 
@@ -480,6 +691,7 @@
       await update(ref(db, `companies/${companyCode}/logs/edits/${Date.now()}`), {
         action: nextActive ? "activate_worker" : "disable_worker",
         workerId,
+        workerName: w.name || "",
         adminUid: currentUser.uid,
         createdAt: nowIso()
       });
@@ -489,7 +701,78 @@
 
     } catch (e) {
       console.error(e);
-      showStatus("workerStatus", "状態変更できませんでした。", "ng");
+      showStatus("workerStatus", "有効/無効の変更に失敗しました。", "ng");
+    }
+  }
+
+  async function loadToday() {
+    const today = ymd();
+    const month = ymKey(today);
+    const dayKey = ymdKey(today);
+
+    const attendanceSnap = await get(ref(db, `companies/${companyCode}/attendance/${month}`));
+    const attendanceData = attendanceSnap.exists() ? attendanceSnap.val() : {};
+
+    const workers = companyData.workers || {};
+    const rows = Object.entries(workers).map(([workerId, w]) => {
+      const a = attendanceData?.[workerId]?.[dayKey] || {};
+      return `
+        <tr>
+          <td>${w.name || ""}</td>
+          <td>${hm(a.clockInAt) || "-"}</td>
+          <td>${hm(a.clockOutAt) || "-"}</td>
+          <td>${a.breakMinutes || 0}分</td>
+          <td>${minToHHMM(a.actualMinutes || 0)}</td>
+          <td>${a.locationApproval || "none"}</td>
+          <td>${a.notes || ""}</td>
+        </tr>
+      `;
+    });
+
+    $("todayBody").innerHTML = rows.join("") || `<tr><td colspan="7">ワーカーが登録されていません。</td></tr>`;
+  }
+
+  async function saveSettings() {
+    try {
+      const companyName = clean($("companyName").value);
+      const closeDay = $("closeDay").value;
+      const retentionMonths = Number($("retentionMonths").value || 3);
+      const defaultStart = $("defaultStart").value || "08:00";
+      const defaultEnd = $("defaultEnd").value || "17:00";
+      const longShiftErrorMinutes = Number($("longShiftErrorMinutes").value || 720);
+      const break6 = Number($("breakRule6").value || 45);
+      const break8 = Number($("breakRule8").value || 60);
+      const gpsMeters = Number($("locationMismatchMeters").value || 300);
+
+      await update(ref(db, `companies/${companyCode}`), {
+        "companyInfo/companyName": companyName,
+        "companyInfo/updatedAt": nowIso(),
+        "settings/close/closeDay": closeDay,
+        "settings/close/retentionMonths": retentionMonths,
+        "settings/work/defaultStart": defaultStart,
+        "settings/work/defaultEnd": defaultEnd,
+        "settings/work/longShiftErrorMinutes": longShiftErrorMinutes,
+        "settings/breakRules/rule1/overMinutes": 360,
+        "settings/breakRules/rule1/deductMinutes": break6,
+        "settings/breakRules/rule2/overMinutes": 480,
+        "settings/breakRules/rule2/deductMinutes": break8,
+        "settings/gps/locationMismatchMeters": gpsMeters
+      });
+
+      await update(ref(db, `companies/${companyCode}/logs/edits/${Date.now()}`), {
+        action: "save_settings",
+        adminUid: currentUser.uid,
+        createdAt: nowIso()
+      });
+
+      await loadCompany();
+      renderCompany();
+
+      showStatus("settingsStatus", "設定を保存しました。", "ok");
+
+    } catch (e) {
+      console.error(e);
+      showStatus("settingsStatus", "設定保存に失敗しました。", "ng");
     }
   }
 
@@ -506,6 +789,7 @@
         currentUser = user;
 
         const ok = await checkAdmin(user.uid);
+
         if (!ok) {
           await signOut(auth);
           localStorage.removeItem("smart_kintai_admin");
@@ -514,19 +798,45 @@
         }
 
         await loadCompany();
+
         renderCompany();
         renderWorkers();
+        await loadToday();
 
         showStatus("mainStatus", "管理者ログイン確認済みです。", "ok");
 
       } catch (e) {
         console.error(e);
-        showStatus("mainStatus", "管理者画面の読み込みに失敗しました。Firebase Rules・初期JSONを確認してください。", "ng");
+        showStatus("mainStatus", "管理者画面の読み込みに失敗しました。FirebaseデータまたはRulesを確認してください。", "ng");
       }
     });
   }
 
+  document.querySelectorAll(".tabBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tabBtn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+
+      btn.classList.add("active");
+      $(btn.dataset.tab).classList.add("active");
+    });
+  });
+
   $("saveWorkerBtn").addEventListener("click", saveWorker);
+  $("clearWorkerFormBtn").addEventListener("click", clearWorkerForm);
+
+  $("reloadWorkersBtn").addEventListener("click", async () => {
+    await loadCompany();
+    renderWorkers();
+    showStatus("workerStatus", "再読込しました。", "ok");
+  });
+
+  $("reloadTodayBtn").addEventListener("click", async () => {
+    await loadCompany();
+    await loadToday();
+  });
+
+  $("saveSettingsBtn").addEventListener("click", saveSettings);
 
   $("logoutBtn").addEventListener("click", async () => {
     await signOut(auth);
