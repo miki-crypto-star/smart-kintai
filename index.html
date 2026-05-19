@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Smart勤怠</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+    }
+    header {
+      background: #111827;
+      color: #fff;
+      padding: 18px 14px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+    header p {
+      margin: 6px 0 0;
+      font-size: 13px;
+      opacity: .9;
+    }
+    main {
+      max-width: 720px;
+      margin: 20px auto;
+      padding: 0 14px 40px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.06);
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 16px;
+      background: #fff;
+    }
+    button {
+      width: 100%;
+      margin-top: 16px;
+      border: 0;
+      border-radius: 12px;
+      padding: 13px;
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+      background: #111827;
+      cursor: pointer;
+    }
+    button.worker {
+      background: #2563eb;
+    }
+    .status {
+      display: none;
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .ok {
+      display: block;
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+    .ng {
+      display: block;
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .note {
+      font-size: 13px;
+      color: #4b5563;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Smart勤怠</h1>
+  <p>勤怠管理DX・総務業務削減・集計自動化</p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>管理者ログイン</h2>
+
+    <label>会社コード</label>
+    <input id="adminCompanyCode" value="demo" autocomplete="off">
+
+    <label>メールアドレス</label>
+    <input id="adminEmail" type="email" value="admin-demo@smart-kintai.local" autocomplete="email">
+
+    <label>パスワード</label>
+    <input id="adminPassword" type="password" value="admin1234" autocomplete="current-password">
+
+    <button id="adminLoginBtn">管理者画面へ</button>
+    <div id="adminStatus" class="status"></div>
+  </section>
+
+  <section class="card">
+    <h2>労働者ログイン</h2>
+    <p class="note">
+      労働者ログインは、次の手順で労働者用Authenticationユーザーを作成してから有効化します。
+    </p>
+
+    <label>会社コード</label>
+    <input id="workerCompanyCode" value="demo" autocomplete="off">
+
+    <label>メールアドレス</label>
+    <input id="workerEmail" type="email" placeholder="例：emp001@smart-kintai.local">
+
+    <label>パスワード</label>
+    <input id="workerPassword" type="password" placeholder="労働者用パスワード">
+
+    <button id="workerLoginBtn" class="worker">労働者画面へ</button>
+    <div id="workerStatus" class="status"></div>
+  </section>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+  import {
+    getDatabase,
+    ref,
+    get
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAokZ3FYeL3qjmZOHhVznhwykvyQu8axp8",
+    authDomain: "smart-kintai.firebaseapp.com",
+    databaseURL: "https://smart-kintai-default-rtdb.firebaseio.com",
+    projectId: "smart-kintai",
+    storageBucket: "smart-kintai.firebasestorage.app",
+    messagingSenderId: "46581025027",
+    appId: "1:46581025027:web:80ca643edc2c202d9f4136",
+    measurementId: "G-NY70722CRJ"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  const $ = (id) => document.getElementById(id);
+
+  function showStatus(id, message, ok) {
+    const el = $(id);
+    el.textContent = message;
+    el.className = "status " + (ok ? "ok" : "ng");
+  }
+
+  function clean(value) {
+    return String(value || "").trim();
+  }
+
+  async function getMember(companyCode, uid) {
+    const snap = await get(ref(db, `companies/${companyCode}/members/${uid}`));
+    if (!snap.exists()) return null;
+    return snap.val();
+  }
+
+  $("adminLoginBtn").addEventListener("click", async () => {
+    const companyCode = clean($("adminCompanyCode").value);
+    const email = clean($("adminEmail").value);
+    const password = $("adminPassword").value;
+
+    if (!companyCode || !email || !password) {
+      showStatus("adminStatus", "会社コード・メールアドレス・パスワードを入力してください。", false);
+      return;
+    }
+
+    try {
+      showStatus("adminStatus", "ログイン確認中です。", true);
+
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+
+      const member = await getMember(companyCode, uid);
+
+      if (!member || member.active !== true || member.role !== "admin") {
+        await signOut(auth);
+        showStatus("adminStatus", "このユーザーは管理者として登録されていません。", false);
+        return;
+      }
+
+      localStorage.setItem("smart_kintai_admin", JSON.stringify({
+        companyCode,
+        uid,
+        email,
+        role: "admin",
+        loginAt: new Date().toISOString()
+      }));
+
+      location.href = `admin.html?company=${encodeURIComponent(companyCode)}`;
+
+    } catch (e) {
+      console.error(e);
+      showStatus("adminStatus", "ログインできません。メール・パスワード・Rules・初期JSONを確認してください。", false);
+    }
+  });
+
+  $("workerLoginBtn").addEventListener("click", async () => {
+    const companyCode = clean($("workerCompanyCode").value);
+    const email = clean($("workerEmail").value);
+    const password = $("workerPassword").value;
+
+    if (!companyCode || !email || !password) {
+      showStatus("workerStatus", "会社コード・メールアドレス・パスワードを入力してください。", false);
+      return;
+    }
+
+    try {
+      showStatus("workerStatus", "ログイン確認中です。", true);
+
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+
+      const member = await getMember(companyCode, uid);
+
+      if (!member || member.active !== true || member.role !== "worker") {
+        await signOut(auth);
+        showStatus("workerStatus", "このユーザーは労働者として登録されていません。", false);
+        return;
+      }
+
+      localStorage.setItem("smart_kintai_worker", JSON.stringify({
+        companyCode,
+        uid,
+        email,
+        role: "worker",
+        workerId: member.workerId || "",
+        loginAt: new Date().toISOString()
+      }));
+
+      location.href = `worker.html?company=${encodeURIComponent(companyCode)}&worker=${encodeURIComponent(member.workerId || "")}`;
+
+    } catch (e) {
+      console.error(e);
+      showStatus("workerStatus", "労働者ログインできません。労働者用Authenticationユーザーとmembers登録が必要です。", false);
+    }
+  });
+</script>
+</body>
+</html>
