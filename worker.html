@@ -1,0 +1,880 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ワーカー画面｜Smart勤怠</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    header {
+      background: #2563eb;
+      color: white;
+      padding: 16px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      font-size: 13px;
+      opacity: .9;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 18px auto;
+      padding: 0 14px 40px;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.05);
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+
+    .row > div {
+      flex: 1;
+      min-width: 160px;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 6px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 15px;
+      background: white;
+    }
+
+    textarea {
+      min-height: 80px;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 13px 14px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      color: white;
+      background: #2563eb;
+    }
+
+    button.red {
+      background: #dc2626;
+    }
+
+    button.dark {
+      background: #111827;
+    }
+
+    button.gray {
+      background: #6b7280;
+    }
+
+    .status {
+      display: none;
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .ok {
+      display: block;
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+
+    .ng {
+      display: block;
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .warn {
+      display: block;
+      background: #fffbeb;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.7;
+    }
+
+    .scroll {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 10px;
+      background: white;
+    }
+
+    th, td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 8px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #f9fafb;
+    }
+
+    .pill {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #e5e7eb;
+    }
+
+    .pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .approved {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>Smart勤怠 ワーカー画面</h1>
+  <p id="headerInfo">確認中...</p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>本日の打刻</h2>
+    <p class="small">
+      GPSは打刻時のみ取得します。常時GPS追跡・位置履歴・打刻写真は使いません。
+    </p>
+
+    <div class="row">
+      <div>
+        <button id="clockInBtn">出勤</button>
+      </div>
+      <div>
+        <button id="clockOutBtn" class="red">退勤</button>
+      </div>
+    </div>
+
+    <div id="clockStatus" class="status"></div>
+    <div id="todayBox" class="small">読み込み中...</div>
+  </section>
+
+  <section class="card">
+    <h2>申請</h2>
+    <p class="small">
+      早出・残業・休日出勤は任意申請制です。承認済みのみ集計に反映します。
+    </p>
+
+    <label>申請種別</label>
+    <select id="requestType">
+      <option value="early">早出申請</option>
+      <option value="overtime">残業申請</option>
+      <option value="holiday">休日出勤申請</option>
+      <option value="correction">打刻修正申請</option>
+    </select>
+
+    <div class="row">
+      <div>
+        <label>日付</label>
+        <input id="requestDate" type="date">
+      </div>
+      <div>
+        <label>開始時刻</label>
+        <input id="requestStart" type="time">
+      </div>
+      <div>
+        <label>終了時刻</label>
+        <input id="requestEnd" type="time">
+      </div>
+    </div>
+
+    <label>理由</label>
+    <textarea id="requestReason" placeholder="理由を入力してください"></textarea>
+
+    <button id="sendRequestBtn" class="dark">申請する</button>
+    <div id="requestStatus" class="status"></div>
+  </section>
+
+  <section class="card">
+    <h2>自分の勤怠確認</h2>
+
+    <div class="row">
+      <div>
+        <label>対象月</label>
+        <input id="monthInput" type="month">
+      </div>
+      <div>
+        <button id="reloadBtn" class="gray">再表示</button>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>日付</th>
+            <th>出勤</th>
+            <th>退勤</th>
+            <th>休憩</th>
+            <th>実働</th>
+            <th>場所確認</th>
+            <th>締め</th>
+            <th>備考</th>
+          </tr>
+        </thead>
+        <tbody id="attendanceBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>申請履歴 / 打刻エラー</h2>
+    <div id="historyBox" class="small">読み込み中...</div>
+  </section>
+
+  <section class="card">
+    <button id="logoutBtn" class="gray">ログアウト</button>
+  </section>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+
+  import {
+    getDatabase,
+    ref,
+    get,
+    set,
+    update,
+    push
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAokZ3FYeL3qjmZOHhVznhwykvyQu8axp8",
+    authDomain: "smart-kintai.firebaseapp.com",
+    databaseURL: "https://smart-kintai-default-rtdb.firebaseio.com",
+    projectId: "smart-kintai",
+    storageBucket: "smart-kintai.firebasestorage.app",
+    messagingSenderId: "46581025027",
+    appId: "1:46581025027:web:80ca643edc2c202d9f4136",
+    measurementId: "G-NY70722CRJ"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const $ = (id) => document.getElementById(id);
+
+  let companyCode = "";
+  let workerId = "";
+  let companyData = null;
+  let workerData = null;
+
+  function clean(value) {
+    return String(value || "").trim();
+  }
+
+  function nowIso() {
+    return new Date().toISOString();
+  }
+
+  function pad(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function todayDate() {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  function ymdKey(dateStr) {
+    return String(dateStr).replaceAll("-", "");
+  }
+
+  function ymKey(dateStr) {
+    return String(dateStr).slice(0, 7).replace("-", "");
+  }
+
+  function currentMonthInput() {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+  }
+
+  function hm(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function minToHHMM(mins) {
+    mins = Number(mins || 0);
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h}:${pad(m)}`;
+  }
+
+  function showStatus(id, message, type = "ok") {
+    const el = $(id);
+    el.textContent = message;
+    el.className = "status " + type;
+  }
+
+  function getSavedWorkerSession() {
+    try {
+      return JSON.parse(localStorage.getItem("smart_kintai_worker") || "null");
+    } catch {
+      return null;
+    }
+  }
+
+  function getUrlParam(name) {
+    return new URLSearchParams(location.search).get(name);
+  }
+
+  async function loadCompany() {
+    const snap = await get(ref(db, `companies/${companyCode}`));
+    if (!snap.exists()) {
+      throw new Error("会社データが見つかりません。");
+    }
+    companyData = snap.val();
+
+    if (!companyData.workers || !companyData.workers[workerId]) {
+      throw new Error("ワーカーが見つかりません。");
+    }
+
+    workerData = companyData.workers[workerId];
+
+    if (workerData.active === false) {
+      throw new Error("このワーカーは無効化されています。");
+    }
+  }
+
+  function getGps() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("この端末ではGPSを取得できません。"));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+
+          resolve({
+            lat,
+            lng,
+            accuracy: pos.coords.accuracy || null,
+            at: nowIso(),
+            mapUrl: `https://www.google.com/maps?q=${lat},${lng}`
+          });
+        },
+        (err) => reject(err),
+        {
+          enableHighAccuracy: true,
+          timeout: 12000,
+          maximumAge: 0
+        }
+      );
+    });
+  }
+
+  function distanceMeters(a, b) {
+    if (!a || !b || a.lat == null || a.lng == null || b.lat == null || b.lng == null) return 0;
+
+    const R = 6371000;
+    const lat1 = Number(a.lat) * Math.PI / 180;
+    const lat2 = Number(b.lat) * Math.PI / 180;
+    const dLat = (Number(b.lat) - Number(a.lat)) * Math.PI / 180;
+    const dLng = (Number(b.lng) - Number(a.lng)) * Math.PI / 180;
+
+    const x =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1) * Math.cos(lat2) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+    return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+  }
+
+  function calcBreakMinutes(totalMinutes) {
+    const rules = companyData.settings?.breakRules || {};
+    let deduct = 0;
+
+    Object.values(rules).forEach(rule => {
+      if (totalMinutes > Number(rule.overMinutes || 0)) {
+        deduct = Math.max(deduct, Number(rule.deductMinutes || 0));
+      }
+    });
+
+    return deduct;
+  }
+
+  function calcAttendance(clockInAt, clockOutAt) {
+    if (!clockInAt || !clockOutAt) {
+      return {
+        workMinutes: 0,
+        breakMinutes: 0,
+        actualMinutes: 0
+      };
+    }
+
+    const start = new Date(clockInAt).getTime();
+    const end = new Date(clockOutAt).getTime();
+    const workMinutes = Math.max(0, Math.round((end - start) / 60000));
+    const breakMinutes = calcBreakMinutes(workMinutes);
+    const actualMinutes = Math.max(0, workMinutes - breakMinutes);
+
+    return {
+      workMinutes,
+      breakMinutes,
+      actualMinutes
+    };
+  }
+
+  async function createError(type, message, gps, dateStr) {
+    const month = ymKey(dateStr);
+    const errorRef = push(ref(db, `companies/${companyCode}/errors/${month}`));
+
+    await set(errorRef, {
+      type,
+      workerId,
+      workerCode: workerData.code || workerId,
+      workerName: workerData.name || "",
+      date: dateStr,
+      message,
+      gps: gps || null,
+      status: "pending",
+      createdAt: nowIso()
+    });
+  }
+
+  async function checkLocationMismatch(gps, dateStr) {
+    const threshold = Number(companyData.settings?.gps?.locationMismatchMeters || 300);
+    const base = workerData.usualLocation || workerData.lastClockGps || null;
+
+    if (!base || !gps) return false;
+
+    const dist = distanceMeters(base, gps);
+
+    if (dist > threshold) {
+      await createError(
+        "location_mismatch",
+        `通常打刻場所または前回打刻場所と異なります。距離：約${Math.round(dist)}m`,
+        gps,
+        dateStr
+      );
+      return true;
+    }
+
+    return false;
+  }
+
+  async function clockIn() {
+    try {
+      showStatus("clockStatus", "GPSを取得しています。", "ok");
+
+      const dateStr = todayDate();
+      const month = ymKey(dateStr);
+      const key = ymdKey(dateStr);
+      const path = `companies/${companyCode}/attendance/${month}/${workerId}/${key}`;
+      const attRef = ref(db, path);
+      const snap = await get(attRef);
+      const current = snap.exists() ? snap.val() : null;
+
+      if (current?.closed) {
+        showStatus("clockStatus", "この日は締め済みです。打刻修正申請をしてください。", "ng");
+        return;
+      }
+
+      if (current?.clockInAt) {
+        await createError("double_in", "二重出勤です。すでに出勤打刻があります。", null, dateStr);
+        showStatus("clockStatus", "すでに出勤打刻があります。二重出勤として管理者に表示しました。", "warn");
+        await reloadAll();
+        return;
+      }
+
+      const gps = await getGps();
+      const mismatch = await checkLocationMismatch(gps, dateStr);
+      const now = nowIso();
+
+      await set(attRef, {
+        date: dateStr,
+        workerId,
+        workerCode: workerData.code || workerId,
+        workerName: workerData.name || "",
+        clockInAt: now,
+        clockOutAt: "",
+        inGps: gps,
+        outGps: null,
+        breakMinutes: 0,
+        workMinutes: 0,
+        actualMinutes: 0,
+        closed: false,
+        locationApproval: mismatch ? "pending" : "none",
+        manualEdited: false,
+        notes: mismatch ? "場所違い確認待ち" : "",
+        createdAt: now,
+        updatedAt: now
+      });
+
+      await update(ref(db, `companies/${companyCode}/workers/${workerId}`), {
+        lastClockGps: {
+          lat: gps.lat,
+          lng: gps.lng,
+          at: now
+        },
+        updatedAt: now
+      });
+
+      showStatus("clockStatus", mismatch ? "出勤しました。場所違いとして管理者確認待ちです。" : "出勤しました。", mismatch ? "warn" : "ok");
+
+      await loadCompany();
+      await reloadAll();
+
+    } catch (e) {
+      console.error(e);
+      showStatus("clockStatus", "出勤打刻に失敗しました。GPS許可・通信状態を確認してください。", "ng");
+    }
+  }
+
+  async function clockOut() {
+    try {
+      showStatus("clockStatus", "GPSを取得しています。", "ok");
+
+      const dateStr = todayDate();
+      const month = ymKey(dateStr);
+      const key = ymdKey(dateStr);
+      const path = `companies/${companyCode}/attendance/${month}/${workerId}/${key}`;
+      const attRef = ref(db, path);
+      const snap = await get(attRef);
+      const current = snap.exists() ? snap.val() : null;
+
+      const gps = await getGps();
+      const now = nowIso();
+
+      if (!current?.clockInAt) {
+        await createError("out_without_in", "出勤なし退勤です。", gps, dateStr);
+
+        await set(attRef, {
+          date: dateStr,
+          workerId,
+          workerCode: workerData.code || workerId,
+          workerName: workerData.name || "",
+          clockInAt: "",
+          clockOutAt: now,
+          inGps: null,
+          outGps: gps,
+          breakMinutes: 0,
+          workMinutes: 0,
+          actualMinutes: 0,
+          closed: false,
+          locationApproval: "pending",
+          manualEdited: false,
+          notes: "出勤なし退勤",
+          createdAt: now,
+          updatedAt: now
+        });
+
+        showStatus("clockStatus", "出勤打刻がない状態で退勤しました。管理者にエラー表示しました。", "warn");
+        await reloadAll();
+        return;
+      }
+
+      if (current?.closed) {
+        showStatus("clockStatus", "この日は締め済みです。打刻修正申請をしてください。", "ng");
+        return;
+      }
+
+      const mismatch = await checkLocationMismatch(gps, dateStr);
+      const calc = calcAttendance(current.clockInAt, now);
+
+      await update(attRef, {
+        clockOutAt: now,
+        outGps: gps,
+        breakMinutes: calc.breakMinutes,
+        workMinutes: calc.workMinutes,
+        actualMinutes: calc.actualMinutes,
+        locationApproval: mismatch || current.locationApproval === "pending" ? "pending" : (current.locationApproval || "none"),
+        notes: mismatch ? "場所違い確認待ち" : (current.notes || ""),
+        updatedAt: now
+      });
+
+      await update(ref(db, `companies/${companyCode}/workers/${workerId}`), {
+        lastClockGps: {
+          lat: gps.lat,
+          lng: gps.lng,
+          at: now
+        },
+        updatedAt: now
+      });
+
+      showStatus("clockStatus", mismatch ? "退勤しました。場所違いとして管理者確認待ちです。" : "退勤しました。", mismatch ? "warn" : "ok");
+
+      await loadCompany();
+      await reloadAll();
+
+    } catch (e) {
+      console.error(e);
+      showStatus("clockStatus", "退勤打刻に失敗しました。GPS許可・通信状態を確認してください。", "ng");
+    }
+  }
+
+  async function sendRequest() {
+    try {
+      const type = $("requestType").value;
+      const date = $("requestDate").value;
+      const startTime = $("requestStart").value;
+      const endTime = $("requestEnd").value;
+      const reason = clean($("requestReason").value);
+
+      if (!date || !startTime || !endTime || !reason) {
+        showStatus("requestStatus", "日付・開始時刻・終了時刻・理由を入力してください。", "ng");
+        return;
+      }
+
+      if (endTime <= startTime) {
+        showStatus("requestStatus", "終了時刻は開始時刻より後にしてください。", "ng");
+        return;
+      }
+
+      const month = ymKey(date);
+      const reqRef = push(ref(db, `companies/${companyCode}/requests/${month}`));
+
+      await set(reqRef, {
+        type,
+        workerId,
+        workerCode: workerData.code || workerId,
+        workerName: workerData.name || "",
+        date,
+        startTime,
+        endTime,
+        reason,
+        status: "pending",
+        createdAt: nowIso(),
+        decidedAt: "",
+        decidedBy: ""
+      });
+
+      $("requestReason").value = "";
+      showStatus("requestStatus", "申請しました。", "ok");
+
+      await loadHistory();
+
+    } catch (e) {
+      console.error(e);
+      showStatus("requestStatus", "申請に失敗しました。", "ng");
+    }
+  }
+
+  async function loadToday() {
+    const dateStr = todayDate();
+    const month = ymKey(dateStr);
+    const key = ymdKey(dateStr);
+
+    const snap = await get(ref(db, `companies/${companyCode}/attendance/${month}/${workerId}/${key}`));
+    const a = snap.exists() ? snap.val() : null;
+
+    if (!a) {
+      $("todayBox").innerHTML = `<p>本日はまだ打刻がありません。</p>`;
+      return;
+    }
+
+    $("todayBox").innerHTML = `
+      <p><strong>出勤：</strong>${hm(a.clockInAt) || "-"}</p>
+      <p><strong>退勤：</strong>${hm(a.clockOutAt) || "-"}</p>
+      <p><strong>休憩：</strong>${a.breakMinutes || 0}分</p>
+      <p><strong>実働：</strong>${minToHHMM(a.actualMinutes || 0)}</p>
+      <p><strong>場所確認：</strong>${a.locationApproval || "none"}</p>
+      <p><strong>備考：</strong>${a.notes || ""}</p>
+    `;
+  }
+
+  async function loadAttendanceTable() {
+    const monthInput = $("monthInput").value || currentMonthInput();
+    const month = monthInput.replace("-", "");
+
+    const snap = await get(ref(db, `companies/${companyCode}/attendance/${month}/${workerId}`));
+    const rows = snap.exists() ? Object.values(snap.val()) : [];
+
+    rows.sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+
+    $("attendanceBody").innerHTML = rows.map(a => `
+      <tr>
+        <td>${a.date || ""}</td>
+        <td>${hm(a.clockInAt) || "-"}</td>
+        <td>${hm(a.clockOutAt) || "-"}</td>
+        <td>${a.breakMinutes || 0}分</td>
+        <td>${minToHHMM(a.actualMinutes || 0)}</td>
+        <td>${a.locationApproval || "none"}</td>
+        <td>${a.closed ? "締め済み" : "未締め"}</td>
+        <td>${a.notes || ""}</td>
+      </tr>
+    `).join("") || `<tr><td colspan="8">データがありません。</td></tr>`;
+  }
+
+  function labelType(type) {
+    const map = {
+      early: "早出申請",
+      overtime: "残業申請",
+      holiday: "休日出勤申請",
+      correction: "打刻修正申請"
+    };
+    return map[type] || type || "";
+  }
+
+  function labelStatus(status) {
+    if (status === "approved") return "承認済み";
+    if (status === "rejected") return "否決";
+    return "承認待ち";
+  }
+
+  async function loadHistory() {
+    const monthInput = $("monthInput").value || currentMonthInput();
+    const month = monthInput.replace("-", "");
+
+    const [reqSnap, errSnap] = await Promise.all([
+      get(ref(db, `companies/${companyCode}/requests/${month}`)),
+      get(ref(db, `companies/${companyCode}/errors/${month}`))
+    ]);
+
+    const requests = reqSnap.exists()
+      ? Object.entries(reqSnap.val()).map(([id, v]) => ({ id, ...v })).filter(r => r.workerId === workerId)
+      : [];
+
+    const errors = errSnap.exists()
+      ? Object.entries(errSnap.val()).map(([id, v]) => ({ id, ...v })).filter(e => e.workerId === workerId)
+      : [];
+
+    const html = [
+      ...requests.map(r => `
+        <div class="card" style="box-shadow:none;margin:8px 0;">
+          <p>
+            <strong>${r.date || ""}</strong>
+            <span class="pill ${r.status || "pending"}">${labelStatus(r.status)}</span>
+          </p>
+          <p>${labelType(r.type)} ${r.startTime || ""}〜${r.endTime || ""}</p>
+          <p>${r.reason || ""}</p>
+        </div>
+      `),
+      ...errors.map(e => `
+        <div class="card" style="box-shadow:none;margin:8px 0;">
+          <p>
+            <strong>${e.date || ""}</strong>
+            <span class="pill pending">${labelStatus(e.status)}</span>
+          </p>
+          <p>${e.message || ""}</p>
+        </div>
+      `)
+    ].join("");
+
+    $("historyBox").innerHTML = html || "申請・打刻エラーはありません。";
+  }
+
+  async function reloadAll() {
+    await loadToday();
+    await loadAttendanceTable();
+    await loadHistory();
+  }
+
+  async function init() {
+    const saved = getSavedWorkerSession();
+
+    companyCode = getUrlParam("company") || saved?.companyCode || "";
+    workerId = getUrlParam("worker") || saved?.workerId || "";
+
+    if (!companyCode || !workerId) {
+      location.href = "index.html";
+      return;
+    }
+
+    try {
+      await loadCompany();
+
+      $("headerInfo").textContent = `${companyData.companyInfo?.companyName || companyCode} / ${workerData.name || workerId}`;
+      $("requestDate").value = todayDate();
+      $("monthInput").value = currentMonthInput();
+
+      await reloadAll();
+
+    } catch (e) {
+      console.error(e);
+      alert("ワーカー画面を開けません。ログインし直してください。");
+      localStorage.removeItem("smart_kintai_worker");
+      location.href = "index.html";
+    }
+  }
+
+  $("clockInBtn").addEventListener("click", clockIn);
+  $("clockOutBtn").addEventListener("click", clockOut);
+  $("sendRequestBtn").addEventListener("click", sendRequest);
+  $("reloadBtn").addEventListener("click", reloadAll);
+
+  $("logoutBtn").addEventListener("click", () => {
+    localStorage.removeItem("smart_kintai_worker");
+    location.href = "index.html";
+  });
+
+  init();
+</script>
+</body>
+</html>
