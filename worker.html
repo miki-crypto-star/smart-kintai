@@ -93,6 +93,9 @@
       cursor: pointer;
       color: white;
       background: #2563eb;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     button.red {
@@ -105,6 +108,38 @@
 
     button.gray {
       background: #6b7280;
+    }
+
+    .clockButtonArea {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+      margin-top: 18px;
+    }
+
+    .clockButtonArea button {
+      min-height: 66px;
+      font-size: 20px;
+      letter-spacing: .04em;
+    }
+
+    .clockOutBox {
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px dashed #fecaca;
+    }
+
+    .clockOutNote {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.7;
+      text-align: center;
     }
 
     .status {
@@ -205,12 +240,15 @@
       GPSは打刻時のみ取得します。常時GPS追跡・位置履歴・打刻写真は使いません。
     </p>
 
-    <div class="row">
-      <div>
-        <button id="clockInBtn">出勤</button>
-      </div>
-      <div>
-        <button id="clockOutBtn" class="red">退勤</button>
+    <div class="clockButtonArea">
+      <button id="clockInBtn">出勤</button>
+
+      <div class="clockOutBox">
+        <button id="clockOutBtn" class="red">退勤 1.2秒長押し</button>
+        <div class="clockOutNote">
+          誤タップ防止のため、退勤はボタンを1.2秒以上長押しした場合のみ実行されます。<br>
+          短くタップしただけでは退勤されません。
+        </div>
       </div>
     </div>
 
@@ -396,6 +434,7 @@
     if (!snap.exists()) {
       throw new Error("会社データが見つかりません。");
     }
+
     companyData = snap.val();
 
     if (!companyData.workers || !companyData.workers[workerId]) {
@@ -836,6 +875,34 @@
     await loadHistory();
   }
 
+  let clockOutTimer = null;
+  let clockOutStarted = false;
+
+  function startClockOutHold(e) {
+    e.preventDefault();
+
+    if (clockOutStarted) return;
+
+    clockOutStarted = true;
+    showStatus("clockStatus", "退勤を実行するには、このまま1.2秒長押ししてください。", "warn");
+
+    clockOutTimer = setTimeout(async () => {
+      clockOutTimer = null;
+      clockOutStarted = false;
+      await clockOut();
+    }, 1200);
+  }
+
+  function cancelClockOutHold() {
+    if (clockOutTimer) {
+      clearTimeout(clockOutTimer);
+      clockOutTimer = null;
+      showStatus("clockStatus", "退勤の長押しをキャンセルしました。", "warn");
+    }
+
+    clockOutStarted = false;
+  }
+
   async function init() {
     const saved = getSavedWorkerSession();
 
@@ -865,7 +932,17 @@
   }
 
   $("clockInBtn").addEventListener("click", clockIn);
-  $("clockOutBtn").addEventListener("click", clockOut);
+
+  const clockOutBtn = $("clockOutBtn");
+
+  clockOutBtn.addEventListener("mousedown", startClockOutHold);
+  clockOutBtn.addEventListener("mouseup", cancelClockOutHold);
+  clockOutBtn.addEventListener("mouseleave", cancelClockOutHold);
+
+  clockOutBtn.addEventListener("touchstart", startClockOutHold, { passive: false });
+  clockOutBtn.addEventListener("touchend", cancelClockOutHold);
+  clockOutBtn.addEventListener("touchcancel", cancelClockOutHold);
+
   $("sendRequestBtn").addEventListener("click", sendRequest);
   $("reloadBtn").addEventListener("click", reloadAll);
 
