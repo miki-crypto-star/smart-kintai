@@ -13,6 +13,7 @@
     label{display:block;font-weight:700;margin-top:12px}
     input{width:100%;box-sizing:border-box;padding:12px;font-size:16px;border:1px solid #d1d5db;border-radius:10px;margin-top:6px}
     button{width:100%;padding:13px;font-size:16px;font-weight:700;border:0;border-radius:12px;margin-top:14px;cursor:pointer}
+    button:disabled{opacity:.6;cursor:not-allowed}
     .primary{background:#2563eb;color:#fff}
     .dark{background:#111827;color:#fff}
     .gray{background:#e5e7eb;color:#111827}
@@ -29,10 +30,10 @@
     <h2>従業員ログイン</h2>
 
     <label>会社コード</label>
-    <input id="workerCompanyCode" placeholder="例：sample-company">
+    <input id="workerCompanyCode" value="demo">
 
     <label>社員コードまたは氏名</label>
-    <input id="workerCode" placeholder="例：岸澤 / 001 / A001">
+    <input id="workerCode" placeholder="例：demo001 / 岸澤 / 001 / A001">
 
     <label>個別パスワード</label>
     <input id="workerPasscode" type="password" placeholder="個別パスワード">
@@ -45,10 +46,10 @@
     <h2>管理者ログイン</h2>
 
     <label>会社コード</label>
-    <input id="adminCompanyCode" placeholder="例：sample-company">
+    <input id="adminCompanyCode" value="demo">
 
     <label>メールアドレス</label>
-    <input id="adminEmail" type="email" placeholder="admin@example.com">
+    <input id="adminEmail" type="email" value="admin-demo@smart-kintai.local">
 
     <label>パスワード</label>
     <input id="adminPassword" type="password" placeholder="パスワード">
@@ -86,20 +87,10 @@
   const auth = getAuth(app);
   const DB_URL = firebaseConfig.databaseURL;
 
-  const $ = (id) => document.getElementById(id);
+  const $ = id => document.getElementById(id);
 
   function sanitizeKey(value){
     return String(value || "").trim().replace(/[.#$/\[\]]/g, "_");
-  }
-
-  function now(){
-    return Date.now();
-  }
-
-  async function getJson(path){
-    const res = await fetch(`${DB_URL}/${path}.json`);
-    if(!res.ok) throw new Error("通信に失敗しました");
-    return await res.json();
   }
 
   function setMsg(id, text, isError=false){
@@ -111,7 +102,12 @@
   function disableButton(btn, disabled, text){
     btn.disabled = disabled;
     btn.textContent = text;
-    btn.style.opacity = disabled ? ".6" : "1";
+  }
+
+  async function getJson(path){
+    const res = await fetch(`${DB_URL}/${path}.json`);
+    if(!res.ok) throw new Error("通信に失敗しました");
+    return await res.json();
   }
 
   async function workerLogin(){
@@ -138,17 +134,15 @@
         throw new Error("個別パスワードが違います。");
       }
 
-      const loginData = {
+      localStorage.setItem("smartKintaiWorkerLogin", JSON.stringify({
         companyCode,
         workerId: workerInput,
         workerCode: worker.code || workerInput,
         workerName: worker.name || workerInput,
-        loginAt: now()
-      };
+        loginAt: Date.now()
+      }));
 
-      localStorage.setItem("smartKintaiWorkerLogin", JSON.stringify(loginData));
       setMsg("workerMsg", "ログインしました。");
-
       location.href = `worker.html?company=${encodeURIComponent(companyCode)}&worker=${encodeURIComponent(workerInput)}`;
 
     }catch(e){
@@ -194,19 +188,25 @@
     }
   }
 
-  async function checkAutoLogin(){
-    const workerLogin = localStorage.getItem("smartKintaiWorkerLogin");
-    if(workerLogin){
-      try{
-        const data = JSON.parse(workerLogin);
-        if(data.companyCode && data.workerId){
-          location.href = `worker.html?company=${encodeURIComponent(data.companyCode)}&worker=${encodeURIComponent(data.workerId)}`;
-          return;
-        }
-      }catch(e){}
+  function checkWorkerAutoLogin(){
+    const saved = localStorage.getItem("smartKintaiWorkerLogin");
+    if(!saved) return false;
+
+    try{
+      const data = JSON.parse(saved);
+      if(data.companyCode && data.workerId){
+        location.href = `worker.html?company=${encodeURIComponent(data.companyCode)}&worker=${encodeURIComponent(data.workerId)}`;
+        return true;
+      }
+    }catch(e){
+      localStorage.removeItem("smartKintaiWorkerLogin");
     }
 
-    onAuthStateChanged(auth, async (user) => {
+    return false;
+  }
+
+  function checkAdminAutoLogin(){
+    onAuthStateChanged(auth, user => {
       const companyCode = localStorage.getItem("smartKintaiAdminCompanyCode");
 
       if(user && companyCode){
@@ -235,7 +235,9 @@
     $("adminLogoutBtn").classList.add("hidden");
   });
 
-  checkAutoLogin();
+  if(!checkWorkerAutoLogin()){
+    checkAdminAutoLogin();
+  }
 </script>
 </body>
 </html>
