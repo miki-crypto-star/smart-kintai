@@ -14,7 +14,7 @@
 
     header {
       background: #111827;
-      color: #fff;
+      color: white;
       padding: 16px;
       text-align: center;
     }
@@ -31,13 +31,13 @@
     }
 
     main {
-      max-width: 1180px;
-      margin: 20px auto;
-      padding: 0 14px 40px;
+      max-width: 1280px;
+      margin: 18px auto;
+      padding: 0 14px 50px;
     }
 
     .card {
-      background: #fff;
+      background: white;
       border: 1px solid #e5e7eb;
       border-radius: 16px;
       padding: 16px;
@@ -51,8 +51,39 @@
     }
 
     h3 {
-      margin: 16px 0 10px;
+      margin: 16px 0 8px;
       font-size: 16px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .tabs button {
+      width: auto;
+      flex: 1;
+      min-width: 120px;
+      background: #e5e7eb;
+      color: #111827;
+      border-radius: 999px;
+      padding: 10px;
+      font-size: 13px;
+    }
+
+    .tabs button.active {
+      background: #111827;
+      color: white;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
     }
 
     .row {
@@ -64,7 +95,7 @@
 
     .row > div {
       flex: 1;
-      min-width: 170px;
+      min-width: 160px;
     }
 
     label {
@@ -74,23 +105,28 @@
       font-weight: 800;
     }
 
-    input, select {
+    input, select, textarea {
       width: 100%;
       box-sizing: border-box;
-      padding: 11px;
+      padding: 10px;
       border: 1px solid #d1d5db;
       border-radius: 10px;
-      font-size: 15px;
-      background: #fff;
+      font-size: 14px;
+      background: white;
+    }
+
+    textarea {
+      min-height: 70px;
     }
 
     button {
+      width: 100%;
       border: 0;
       border-radius: 11px;
-      padding: 11px 14px;
+      padding: 10px 12px;
       font-size: 14px;
       font-weight: 800;
-      color: #fff;
+      color: white;
       background: #111827;
       cursor: pointer;
     }
@@ -103,17 +139,16 @@
       background: #dc2626;
     }
 
-    button.gray {
-      background: #6b7280;
-    }
-
     button.green {
       background: #16a34a;
     }
 
-    button:disabled {
-      opacity: .5;
-      cursor: not-allowed;
+    button.gray {
+      background: #6b7280;
+    }
+
+    button.orange {
+      background: #ea580c;
     }
 
     .status {
@@ -159,17 +194,17 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
-      background: white;
+      font-size: 12px;
       margin-top: 10px;
+      background: white;
     }
 
     th, td {
       border-bottom: 1px solid #e5e7eb;
-      padding: 8px;
+      padding: 7px;
       text-align: left;
       white-space: nowrap;
-      vertical-align: middle;
+      vertical-align: top;
     }
 
     th {
@@ -182,114 +217,306 @@
       padding: 3px 8px;
       font-size: 12px;
       font-weight: 800;
+      background: #e5e7eb;
     }
 
-    .activePill {
+    .pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .approved {
       background: #dcfce7;
       color: #166534;
     }
 
-    .inactivePill {
+    .rejected {
       background: #fee2e2;
       color: #991b1b;
     }
 
-    .tabs {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
+    .closed {
+      background: #dbeafe;
+      color: #1e40af;
     }
 
-    .tabs button {
-      flex: 1;
-      min-width: 120px;
-      background: #e5e7eb;
-      color: #111827;
-      border-radius: 999px;
+    .dangerBox {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 12px;
+      border-radius: 12px;
+      line-height: 1.7;
+      font-size: 13px;
+      margin-top: 10px;
     }
 
-    .tabs button.active {
-      background: #111827;
-      color: #fff;
+    .infoBox {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+      padding: 12px;
+      border-radius: 12px;
+      line-height: 1.7;
+      font-size: 13px;
+      margin-top: 10px;
     }
 
-    .section {
-      display: none;
-    }
+    @media print {
+      header, .tabs, .noPrint, button {
+        display: none !important;
+      }
 
-    .section.active {
-      display: block;
+      body {
+        background: white;
+      }
+
+      main {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .card {
+        box-shadow: none;
+        border: 0;
+        margin: 0;
+      }
     }
   </style>
 </head>
-
 <body>
+
 <header>
   <h1>Smart勤怠 管理者画面</h1>
   <p id="headerInfo">確認中...</p>
 </header>
 
 <main>
-  <div class="tabs">
-    <button class="tabBtn active" data-tab="homeSection">本日</button>
-    <button class="tabBtn" data-tab="workersSection">ワーカー管理</button>
-    <button class="tabBtn" data-tab="settingsSection">設定</button>
+  <div class="tabs noPrint">
+    <button data-tab="today" class="active">本日</button>
+    <button data-tab="monthly">月別</button>
+    <button data-tab="approvals">申請承認</button>
+    <button data-tab="errors">打刻エラー</button>
+    <button data-tab="edit">手動編集</button>
+    <button data-tab="close">締め/CSV</button>
+    <button data-tab="workers">ワーカー管理</button>
+    <button data-tab="settings">設定</button>
   </div>
 
-  <section id="homeSection" class="section active">
-    <div class="card">
-      <h2>会社情報</h2>
-      <div id="companyBox" class="small">読み込み中...</div>
-      <div id="mainStatus" class="status"></div>
-    </div>
-
+  <section id="today" class="section active">
     <div class="card">
       <h2>本日の勤怠確認</h2>
-      <button id="reloadTodayBtn" class="gray">再読込</button>
+      <div id="todayStatus" class="status"></div>
+      <button id="reloadTodayBtn" class="gray noPrint">再読み込み</button>
+
       <div class="scroll">
         <table>
           <thead>
             <tr>
+              <th>社員コード</th>
               <th>氏名</th>
               <th>出勤</th>
               <th>退勤</th>
               <th>休憩</th>
               <th>実働</th>
               <th>場所確認</th>
+              <th>締め</th>
               <th>備考</th>
             </tr>
           </thead>
-          <tbody id="todayBody">
-            <tr>
-              <td colspan="7">読み込み中...</td>
-            </tr>
-          </tbody>
+          <tbody id="todayBody"></tbody>
         </table>
       </div>
     </div>
   </section>
 
-  <section id="workersSection" class="section">
+  <section id="monthly" class="section">
     <div class="card">
-      <h2>ワーカー追加 / 編集</h2>
+      <h2>月別勤怠確認</h2>
+
+      <div class="row noPrint">
+        <div>
+          <label>対象月</label>
+          <input id="monthlyMonth" type="month">
+        </div>
+        <div>
+          <button id="loadMonthlyBtn" class="gray">表示</button>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>日付</th>
+              <th>社員コード</th>
+              <th>氏名</th>
+              <th>出勤</th>
+              <th>退勤</th>
+              <th>休憩</th>
+              <th>実働</th>
+              <th>早出</th>
+              <th>残業</th>
+              <th>休日出勤</th>
+              <th>遅刻</th>
+              <th>早退</th>
+              <th>欠勤</th>
+              <th>場所確認</th>
+              <th>承認状況</th>
+              <th>備考</th>
+            </tr>
+          </thead>
+          <tbody id="monthlyBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="approvals" class="section">
+    <div class="card">
+      <h2>申請承認</h2>
+
+      <div class="row noPrint">
+        <div>
+          <label>対象月</label>
+          <input id="approvalMonth" type="month">
+        </div>
+        <div>
+          <button id="loadApprovalsBtn" class="gray">表示</button>
+        </div>
+      </div>
+
+      <div id="approvalList"></div>
+    </div>
+  </section>
+
+  <section id="errors" class="section">
+    <div class="card">
+      <h2>打刻エラー / 場所違い確認</h2>
       <p class="small">
-        ワーカーはFirebase Authenticationを使いません。管理者がここで氏名と個別パスワードを登録します。
+        場所違いはGoogleマップで確認し、承認または否決できます。承認結果は勤怠データにも反映します。
       </p>
 
-      <input id="editingWorkerId" type="hidden">
+      <div class="row noPrint">
+        <div>
+          <label>対象月</label>
+          <input id="errorMonth" type="month">
+        </div>
+        <div>
+          <button id="loadErrorsBtn" class="gray">表示</button>
+        </div>
+      </div>
+
+      <div id="errorList"></div>
+    </div>
+  </section>
+
+  <section id="edit" class="section">
+    <div class="card">
+      <h2>勤怠手動編集</h2>
+      <p class="small">
+        打刻ミスや休憩例外はここで修正します。編集履歴は logs/edits に保存します。
+      </p>
 
       <div class="row">
         <div>
-          <label>氏名</label>
-          <input id="workerName" placeholder="例：山田太郎">
+          <label>対象日</label>
+          <input id="editDate" type="date">
         </div>
+        <div>
+          <label>ワーカー</label>
+          <select id="editWorker"></select>
+        </div>
+        <div>
+          <button id="loadEditBtn" class="gray">読込</button>
+        </div>
+      </div>
 
+      <div class="row">
+        <div>
+          <label>出勤時刻</label>
+          <input id="editClockIn" type="time">
+        </div>
+        <div>
+          <label>退勤時刻</label>
+          <input id="editClockOut" type="time">
+        </div>
+        <div>
+          <label>休憩分</label>
+          <input id="editBreak" type="number" min="0" value="0">
+        </div>
+      </div>
+
+      <label>場所確認ステータス</label>
+      <select id="editLocationApproval">
+        <option value="none">none</option>
+        <option value="pending">pending</option>
+        <option value="approved">approved</option>
+        <option value="rejected">rejected</option>
+      </select>
+
+      <label>備考</label>
+      <textarea id="editNotes" placeholder="修正理由や備考を入力"></textarea>
+
+      <button id="saveEditBtn" class="blue">勤怠を手動保存</button>
+      <div id="editStatus" class="status"></div>
+    </div>
+  </section>
+
+  <section id="close" class="section">
+    <div class="card">
+      <h2>締め処理 / CSV出力 / 印刷用明細</h2>
+
+      <div class="infoBox">
+        保存期間は締め後3か月です。保存期間を管理者が変更する欄は出しません。<br>
+        CSV保存確認後、対象期間の勤怠データを削除できます。
+      </div>
+
+      <div class="row noPrint">
+        <div>
+          <label>対象月</label>
+          <input id="closeMonth" type="month">
+        </div>
+        <div>
+          <button id="closeCsvBtn" class="red">締めてCSV出力</button>
+        </div>
+        <div>
+          <button id="printStatementsBtn" class="blue">PDF / 印刷用明細</button>
+        </div>
+        <div>
+          <button id="checkOldDataBtn" class="orange">3か月超データ確認</button>
+        </div>
+      </div>
+
+      <div id="closeStatus" class="status"></div>
+      <div id="oldDataBox"></div>
+    </div>
+  </section>
+
+  <section id="workers" class="section">
+    <div class="card">
+      <h2>ワーカー管理</h2>
+      <p class="small">
+        社員コードは自由入力です。EMP001などの固定ナンバリングは使いません。完全削除はせず、無効化は active:false で行います。
+      </p>
+
+      <div class="row">
+        <div>
+          <label>社員コード</label>
+          <input id="workerCode" placeholder="例：岸澤、田中、001、A001など">
+        </div>
+        <div>
+          <label>氏名</label>
+          <input id="workerName" placeholder="例：岸澤太郎">
+        </div>
         <div>
           <label>個別パスワード</label>
-          <input id="workerPasscode" placeholder="例：1111">
+          <input id="workerPasscode" placeholder="例：1234">
         </div>
+      </div>
 
+      <div class="row">
         <div>
           <label>雇用区分</label>
           <select id="employmentType">
@@ -298,43 +525,37 @@
             <option value="アルバイト">アルバイト</option>
           </select>
         </div>
-      </div>
-
-      <div class="row">
         <div>
           <label>開始時刻</label>
           <input id="workStart" type="time" value="08:00">
         </div>
-
         <div>
           <label>終了時刻</label>
           <input id="workEnd" type="time" value="17:00">
         </div>
+      </div>
 
+      <div class="row">
         <div>
-          <button id="saveWorkerBtn" class="blue">ワーカーを保存</button>
+          <label>通常打刻場所 緯度</label>
+          <input id="usualLat" type="number" step="0.000001" placeholder="任意">
         </div>
-
         <div>
-          <button id="clearWorkerFormBtn" class="gray">入力欄をクリア</button>
+          <label>通常打刻場所 経度</label>
+          <input id="usualLng" type="number" step="0.000001" placeholder="任意">
+        </div>
+        <div>
+          <button id="saveWorkerBtn" class="blue">追加 / 更新</button>
         </div>
       </div>
 
       <div id="workerStatus" class="status"></div>
-    </div>
-
-    <div class="card">
-      <h2>ワーカー一覧</h2>
-      <p class="small">
-        パスワードは管理者画面で確認できます。削除はせず、使わないワーカーは無効化します。
-      </p>
-
-      <button id="reloadWorkersBtn" class="gray">再読込</button>
 
       <div class="scroll">
         <table>
           <thead>
             <tr>
+              <th>社員コード</th>
               <th>氏名</th>
               <th>個別パスワード</th>
               <th>雇用区分</th>
@@ -343,26 +564,20 @@
               <th>操作</th>
             </tr>
           </thead>
-          <tbody id="workerBody">
-            <tr>
-              <td colspan="6">読み込み中...</td>
-            </tr>
-          </tbody>
+          <tbody id="workerBody"></tbody>
         </table>
       </div>
     </div>
   </section>
 
-  <section id="settingsSection" class="section">
+  <section id="settings" class="section">
     <div class="card">
-      <h2>会社・勤務設定</h2>
+      <h2>会社設定</h2>
+
+      <label>会社名</label>
+      <input id="companyName">
 
       <div class="row">
-        <div>
-          <label>会社名</label>
-          <input id="companyName">
-        </div>
-
         <div>
           <label>締め日</label>
           <select id="closeDay">
@@ -372,52 +587,40 @@
             <option value="25">25日</option>
           </select>
         </div>
-
-        <div>
-          <label>保存期間 月</label>
-          <input id="retentionMonths" type="number" min="1" value="3">
-        </div>
-      </div>
-
-      <div class="row">
         <div>
           <label>標準開始時刻</label>
-          <input id="defaultStart" type="time" value="08:00">
+          <input id="defaultStart" type="time">
         </div>
-
         <div>
           <label>標準終了時刻</label>
-          <input id="defaultEnd" type="time" value="17:00">
-        </div>
-
-        <div>
-          <label>長時間未退勤検知 分</label>
-          <input id="longShiftErrorMinutes" type="number" value="720">
+          <input id="defaultEnd" type="time">
         </div>
       </div>
 
       <div class="row">
         <div>
-          <label>6時間超 休憩控除 分</label>
-          <input id="breakRule6" type="number" value="45">
+          <label>6時間超 休憩控除分</label>
+          <input id="break6" type="number" min="0">
         </div>
-
         <div>
-          <label>8時間超 休憩控除 分</label>
-          <input id="breakRule8" type="number" value="60">
+          <label>8時間超 休憩控除分</label>
+          <input id="break8" type="number" min="0">
         </div>
-
         <div>
           <label>場所違い判定距離 m</label>
-          <input id="locationMismatchMeters" type="number" value="300">
+          <input id="gpsMismatch" type="number" min="10">
         </div>
+      </div>
+
+      <div class="infoBox">
+        保存期間：締め後3か月固定。ここでは変更できません。
       </div>
 
       <button id="saveSettingsBtn" class="blue">設定を保存</button>
       <div id="settingsStatus" class="status"></div>
     </div>
 
-    <div class="card">
+    <div class="card noPrint">
       <button id="logoutBtn" class="gray">ログアウト</button>
     </div>
   </section>
@@ -436,7 +639,10 @@
     getDatabase,
     ref,
     get,
-    update
+    set,
+    update,
+    remove,
+    push
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
   const firebaseConfig = {
@@ -457,37 +663,33 @@
   const $ = (id) => document.getElementById(id);
 
   let companyCode = "demo";
-  let currentUser = null;
   let companyData = null;
-
-  function clean(value) {
-    return String(value || "").trim();
-  }
+  let currentUser = null;
 
   function nowIso() {
     return new Date().toISOString();
-  }
-
-  function showStatus(id, message, type = "ok") {
-    const el = $(id);
-    el.textContent = message;
-    el.className = "status " + type;
   }
 
   function pad(n) {
     return String(n).padStart(2, "0");
   }
 
-  function ymd(d = new Date()) {
+  function todayDate() {
+    const d = new Date();
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 
-  function ymdKey(dateStr = ymd()) {
-    return dateStr.replaceAll("-", "");
+  function currentMonthInput() {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
   }
 
-  function ymKey(dateStr = ymd()) {
-    return dateStr.slice(0, 7).replace("-", "");
+  function ymKey(dateStr) {
+    return String(dateStr).slice(0, 7).replace("-", "");
+  }
+
+  function ymdKey(dateStr) {
+    return String(dateStr).replaceAll("-", "");
   }
 
   function hm(iso) {
@@ -497,6 +699,22 @@
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
+  function isoFromDateTime(dateStr, timeStr) {
+    if (!dateStr || !timeStr) return "";
+    return `${dateStr}T${timeStr}:00`;
+  }
+
+  function timeToMinutes(t) {
+    if (!t) return 0;
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
+  }
+
+  function diffTimeMinutes(start, end) {
+    if (!start || !end || end <= start) return 0;
+    return timeToMinutes(end) - timeToMinutes(start);
+  }
+
   function minToHHMM(mins) {
     mins = Number(mins || 0);
     const h = Math.floor(mins / 60);
@@ -504,280 +722,978 @@
     return `${h}:${pad(m)}`;
   }
 
-  function getCompanyCodeFromUrlOrStorage() {
-    const params = new URLSearchParams(location.search);
-    const fromUrl = params.get("company");
-    if (fromUrl) return fromUrl;
+  function clean(v) {
+    return String(v || "").trim();
+  }
 
-    try {
-      const saved = JSON.parse(localStorage.getItem("smart_kintai_admin") || "null");
-      return saved?.companyCode || "demo";
-    } catch {
-      return "demo";
-    }
+  function safeKey(v) {
+    return clean(v).replace(/[.#$/\[\]]/g, "_");
+  }
+
+  function showStatus(id, message, type = "ok") {
+    const el = $(id);
+    el.textContent = message;
+    el.className = "status " + type;
+  }
+
+  function getUrlCompany() {
+    const params = new URLSearchParams(location.search);
+    return params.get("company") || "demo";
+  }
+
+  async function loadCompany() {
+    const snap = await get(ref(db, `companies/${companyCode}`));
+    if (!snap.exists()) throw new Error("会社データがありません。");
+    companyData = snap.val();
   }
 
   async function checkAdmin(uid) {
     const snap = await get(ref(db, `companies/${companyCode}/members/${uid}`));
     if (!snap.exists()) return false;
-    const member = snap.val();
-    return member.role === "admin" && member.active === true;
+    const m = snap.val();
+    return m.role === "admin" && m.active === true;
   }
 
-  async function loadCompany() {
-    const snap = await get(ref(db, `companies/${companyCode}`));
-    if (!snap.exists()) {
-      throw new Error("会社データが見つかりません。");
-    }
-    companyData = snap.val();
+  function getWorkersArray(includeInactive = true) {
+    return Object.entries(companyData.workers || {})
+      .filter(([id, w]) => w && w.deleteMe !== true)
+      .filter(([id, w]) => includeInactive || w.active !== false)
+      .map(([id, w]) => ({ id, ...w }));
   }
 
-  function generateWorkerId() {
-    return "w_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
-  }
-
-  function renderCompany() {
-    const info = companyData.companyInfo || {};
-    const settings = companyData.settings || {};
-
-    $("headerInfo").textContent = `${info.companyName || companyCode} / 管理者`;
-
-    $("companyBox").innerHTML = `
-      <p><strong>会社コード：</strong>${info.companyCode || companyCode}</p>
-      <p><strong>会社名：</strong>${info.companyName || ""}</p>
-      <p><strong>締め日：</strong>${settings.close?.closeDay === "end" ? "月末" : (settings.close?.closeDay || "") + "日"}</p>
-      <p><strong>保存期間：</strong>${settings.close?.retentionMonths || 3}か月</p>
-      <p><strong>標準勤務：</strong>${settings.work?.defaultStart || "08:00"}〜${settings.work?.defaultEnd || "17:00"}</p>
-    `;
-
-    $("companyName").value = info.companyName || "";
-    $("closeDay").value = settings.close?.closeDay || "end";
-    $("retentionMonths").value = settings.close?.retentionMonths || 3;
-    $("defaultStart").value = settings.work?.defaultStart || "08:00";
-    $("defaultEnd").value = settings.work?.defaultEnd || "17:00";
-    $("longShiftErrorMinutes").value = settings.work?.longShiftErrorMinutes || 720;
-    $("breakRule6").value = settings.breakRules?.rule1?.deductMinutes ?? 45;
-    $("breakRule8").value = settings.breakRules?.rule2?.deductMinutes ?? 60;
-    $("locationMismatchMeters").value = settings.gps?.locationMismatchMeters || 300;
-  }
-
-  function renderWorkers() {
-    const workers = companyData.workers || {};
-    const entries = Object.entries(workers);
-
-    if (!entries.length) {
-      $("workerBody").innerHTML = `<tr><td colspan="6">ワーカーが登録されていません。</td></tr>`;
-      return;
-    }
-
-    $("workerBody").innerHTML = entries.map(([workerId, w]) => {
-      const isActive = w.active !== false;
-
-      return `
-        <tr>
-          <td>${w.name || ""}</td>
-          <td>${w.loginPasscode || ""}</td>
-          <td>${w.employmentType || ""}</td>
-          <td>${w.workStart || ""}〜${w.workEnd || ""}</td>
-          <td>
-            <span class="pill ${isActive ? "activePill" : "inactivePill"}">
-              ${isActive ? "有効" : "無効"}
-            </span>
-          </td>
-          <td>
-            <button class="gray" data-edit="${workerId}">編集</button>
-            <button class="${isActive ? "red" : "green"}" data-toggle="${workerId}">
-              ${isActive ? "無効化" : "有効化"}
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join("");
-
-    document.querySelectorAll("[data-edit]").forEach(btn => {
-      btn.addEventListener("click", () => fillWorkerForm(btn.dataset.edit));
-    });
-
-    document.querySelectorAll("[data-toggle]").forEach(btn => {
-      btn.addEventListener("click", () => toggleWorker(btn.dataset.toggle));
-    });
-  }
-
-  function clearWorkerForm() {
-    $("editingWorkerId").value = "";
-    $("workerName").value = "";
-    $("workerPasscode").value = "";
-    $("employmentType").value = "正社員";
-    $("workStart").value = companyData?.settings?.work?.defaultStart || "08:00";
-    $("workEnd").value = companyData?.settings?.work?.defaultEnd || "17:00";
-  }
-
-  function fillWorkerForm(workerId) {
-    const w = companyData.workers?.[workerId];
-    if (!w) return;
-
-    $("editingWorkerId").value = workerId;
-    $("workerName").value = w.name || "";
-    $("workerPasscode").value = w.loginPasscode || "";
-    $("employmentType").value = w.employmentType || "正社員";
-    $("workStart").value = w.workStart || companyData.settings?.work?.defaultStart || "08:00";
-    $("workEnd").value = w.workEnd || companyData.settings?.work?.defaultEnd || "17:00";
-
-    showStatus("workerStatus", "編集内容を読み込みました。変更後に保存してください。", "ok");
-  }
-
-  async function saveWorker() {
-    try {
-      const editingWorkerId = clean($("editingWorkerId").value);
-      const name = clean($("workerName").value);
-      const loginPasscode = String($("workerPasscode").value || "");
-      const employmentType = $("employmentType").value;
-      const workStart = $("workStart").value || "08:00";
-      const workEnd = $("workEnd").value || "17:00";
-
-      if (!name || !loginPasscode) {
-        showStatus("workerStatus", "氏名と個別パスワードを入力してください。", "ng");
-        return;
+  function calcBreakMinutes(totalMinutes) {
+    const rules = companyData.settings?.breakRules || {};
+    let deduct = 0;
+    Object.values(rules).forEach(rule => {
+      if (totalMinutes > Number(rule.overMinutes || 0)) {
+        deduct = Math.max(deduct, Number(rule.deductMinutes || 0));
       }
-
-      const workerId = editingWorkerId || generateWorkerId();
-      const old = companyData.workers?.[workerId] || {};
-
-      await update(ref(db, `companies/${companyCode}/workers/${workerId}`), {
-        name,
-        loginPasscode,
-        employmentType,
-        active: old.active === false ? false : true,
-        workStart,
-        workEnd,
-        usualLocation: old.usualLocation || null,
-        lastClockGps: old.lastClockGps || null,
-        createdAt: old.createdAt || nowIso(),
-        updatedAt: nowIso()
-      });
-
-      await update(ref(db, `companies/${companyCode}/logs/edits/${Date.now()}`), {
-        action: editingWorkerId ? "update_worker" : "create_worker",
-        workerId,
-        workerName: name,
-        adminUid: currentUser.uid,
-        createdAt: nowIso()
-      });
-
-      showStatus("workerStatus", editingWorkerId ? "ワーカーを更新しました。" : "ワーカーを追加しました。", "ok");
-
-      await loadCompany();
-      renderWorkers();
-      clearWorkerForm();
-
-    } catch (e) {
-      console.error(e);
-      showStatus("workerStatus", "ワーカーを保存できませんでした。Rulesまたは通信状態を確認してください。", "ng");
-    }
+    });
+    return deduct;
   }
 
-  async function toggleWorker(workerId) {
-    try {
-      const w = companyData.workers?.[workerId];
-      if (!w) return;
-
-      const nextActive = w.active === false;
-
-      await update(ref(db, `companies/${companyCode}/workers/${workerId}`), {
-        active: nextActive,
-        updatedAt: nowIso()
-      });
-
-      await update(ref(db, `companies/${companyCode}/logs/edits/${Date.now()}`), {
-        action: nextActive ? "activate_worker" : "disable_worker",
-        workerId,
-        workerName: w.name || "",
-        adminUid: currentUser.uid,
-        createdAt: nowIso()
-      });
-
-      await loadCompany();
-      renderWorkers();
-
-    } catch (e) {
-      console.error(e);
-      showStatus("workerStatus", "有効/無効の変更に失敗しました。", "ng");
+  function calcAttendance(clockInAt, clockOutAt, manualBreak = null) {
+    if (!clockInAt || !clockOutAt) {
+      return { workMinutes: 0, breakMinutes: Number(manualBreak || 0), actualMinutes: 0 };
     }
+
+    const start = new Date(clockInAt).getTime();
+    const end = new Date(clockOutAt).getTime();
+    const workMinutes = Math.max(0, Math.round((end - start) / 60000));
+    const breakMinutes = manualBreak !== null ? Number(manualBreak || 0) : calcBreakMinutes(workMinutes);
+    const actualMinutes = Math.max(0, workMinutes - breakMinutes);
+
+    return { workMinutes, breakMinutes, actualMinutes };
   }
 
-  async function loadToday() {
-    const today = ymd();
-    const month = ymKey(today);
-    const dayKey = ymdKey(today);
+  function labelType(type) {
+    const map = {
+      early: "早出",
+      overtime: "残業",
+      holiday: "休日出勤",
+      correction: "打刻修正"
+    };
+    return map[type] || type || "";
+  }
 
-    const attendanceSnap = await get(ref(db, `companies/${companyCode}/attendance/${month}`));
-    const attendanceData = attendanceSnap.exists() ? attendanceSnap.val() : {};
+  function labelStatus(s) {
+    if (s === "approved") return "承認済み";
+    if (s === "rejected") return "否決";
+    return "承認待ち";
+  }
 
-    const workers = companyData.workers || {};
-    const rows = Object.entries(workers).map(([workerId, w]) => {
-      const a = attendanceData?.[workerId]?.[dayKey] || {};
+  async function addLog(category, data) {
+    const logRef = push(ref(db, `companies/${companyCode}/logs/${category}`));
+    await set(logRef, {
+      ...data,
+      adminUid: currentUser?.uid || "",
+      createdAt: nowIso()
+    });
+  }
+
+  async function renderToday() {
+    const date = todayDate();
+    const month = ymKey(date);
+    const key = ymdKey(date);
+
+    const snap = await get(ref(db, `companies/${companyCode}/attendance/${month}`));
+    const monthData = snap.exists() ? snap.val() : {};
+    const workers = getWorkersArray(false);
+
+    $("todayBody").innerHTML = workers.map(w => {
+      const a = monthData?.[w.id]?.[key] || {};
       return `
         <tr>
+          <td>${w.code || w.id}</td>
           <td>${w.name || ""}</td>
           <td>${hm(a.clockInAt) || "-"}</td>
           <td>${hm(a.clockOutAt) || "-"}</td>
           <td>${a.breakMinutes || 0}分</td>
           <td>${minToHHMM(a.actualMinutes || 0)}</td>
           <td>${a.locationApproval || "none"}</td>
+          <td>${a.closed ? "締め済み" : "未締め"}</td>
           <td>${a.notes || ""}</td>
         </tr>
       `;
+    }).join("") || `<tr><td colspan="9">ワーカーが登録されていません。</td></tr>`;
+  }
+
+  function getDateRangeForMonth(monthValue) {
+    const closeDay = companyData.settings?.close?.closeDay || "end";
+    const [y, m] = monthValue.split("-").map(Number);
+
+    if (closeDay === "end") {
+      return {
+        start: new Date(y, m - 1, 1),
+        end: new Date(y, m, 0)
+      };
+    }
+
+    const d = Number(closeDay);
+    return {
+      start: new Date(y, m - 2, d + 1),
+      end: new Date(y, m - 1, d)
+    };
+  }
+
+  function dateList(start, end) {
+    const arr = [];
+    const d = new Date(start);
+    while (d <= end) {
+      arr.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
+      d.setDate(d.getDate() + 1);
+    }
+    return arr;
+  }
+
+  function isHoliday(dateStr) {
+    const d = new Date(dateStr + "T00:00:00");
+    return !!companyData.settings?.work?.weeklyHolidays?.[d.getDay()];
+  }
+
+  function collectMonths(dates) {
+    return [...new Set(dates.map(d => ymKey(d)))];
+  }
+
+  async function loadAttendanceMonths(months) {
+    const result = {};
+    for (const m of months) {
+      const snap = await get(ref(db, `companies/${companyCode}/attendance/${m}`));
+      result[m] = snap.exists() ? snap.val() : {};
+    }
+    return result;
+  }
+
+  async function loadRequestMonths(months) {
+    const result = {};
+    for (const m of months) {
+      const snap = await get(ref(db, `companies/${companyCode}/requests/${m}`));
+      result[m] = snap.exists() ? snap.val() : {};
+    }
+    return result;
+  }
+
+  function approvedMinutes(reqs, workerId, date, type) {
+    let total = 0;
+    Object.values(reqs).forEach(monthObj => {
+      Object.values(monthObj || {}).forEach(r => {
+        if (r.deleteMe === true) return;
+        if (r.workerId === workerId && r.date === date && r.type === type && r.status === "approved") {
+          total += diffTimeMinutes(r.startTime, r.endTime);
+        }
+      });
+    });
+    return total;
+  }
+
+  function approvalText(reqs, workerId, date) {
+    const list = [];
+    Object.values(reqs).forEach(monthObj => {
+      Object.values(monthObj || {}).forEach(r => {
+        if (r.deleteMe === true) return;
+        if (r.workerId === workerId && r.date === date) {
+          list.push(`${labelType(r.type)}:${labelStatus(r.status)}`);
+        }
+      });
+    });
+    return list.join(" / ");
+  }
+
+  function lateMinutes(worker, a) {
+    if (!a?.clockInAt) return 0;
+    const start = worker.workStart || companyData.settings?.work?.defaultStart || "08:00";
+    return Math.max(0, timeToMinutes(hm(a.clockInAt)) - timeToMinutes(start));
+  }
+
+  function earlyLeaveMinutes(worker, a) {
+    if (!a?.clockOutAt) return 0;
+    const end = worker.workEnd || companyData.settings?.work?.defaultEnd || "17:00";
+    return Math.max(0, timeToMinutes(end) - timeToMinutes(hm(a.clockOutAt)));
+  }
+
+  async function renderMonthly() {
+    const monthValue = $("monthlyMonth").value || currentMonthInput();
+    const range = getDateRangeForMonth(monthValue);
+    const dates = dateList(range.start, range.end);
+    const months = collectMonths(dates);
+
+    const atts = await loadAttendanceMonths(months);
+    const reqs = await loadRequestMonths(months);
+    const workers = getWorkersArray(false);
+    const rows = [];
+
+    workers.forEach(w => {
+      dates.forEach(date => {
+        const month = ymKey(date);
+        const key = ymdKey(date);
+        const a = atts?.[month]?.[w.id]?.[key] || null;
+
+        const early = approvedMinutes(reqs, w.id, date, "early");
+        const overtime = approvedMinutes(reqs, w.id, date, "overtime");
+        const holiday = approvedMinutes(reqs, w.id, date, "holiday");
+        const absent = !isHoliday(date) && !a?.clockInAt && !a?.clockOutAt ? "欠勤" : "";
+
+        rows.push(`
+          <tr>
+            <td>${date}</td>
+            <td>${w.code || w.id}</td>
+            <td>${w.name || ""}</td>
+            <td>${hm(a?.clockInAt) || "-"}</td>
+            <td>${hm(a?.clockOutAt) || "-"}</td>
+            <td>${a?.breakMinutes || 0}分</td>
+            <td>${minToHHMM(a?.actualMinutes || 0)}</td>
+            <td>${early ? minToHHMM(early) : ""}</td>
+            <td>${overtime ? minToHHMM(overtime) : ""}</td>
+            <td>${holiday ? minToHHMM(holiday) : ""}</td>
+            <td>${lateMinutes(w, a) ? minToHHMM(lateMinutes(w, a)) : ""}</td>
+            <td>${earlyLeaveMinutes(w, a) ? minToHHMM(earlyLeaveMinutes(w, a)) : ""}</td>
+            <td>${absent}</td>
+            <td>${a?.locationApproval || ""}</td>
+            <td>${approvalText(reqs, w.id, date)}</td>
+            <td>${a?.notes || ""}</td>
+          </tr>
+        `);
+      });
     });
 
-    $("todayBody").innerHTML = rows.join("") || `<tr><td colspan="7">ワーカーが登録されていません。</td></tr>`;
+    $("monthlyBody").innerHTML = rows.join("") || `<tr><td colspan="16">データがありません。</td></tr>`;
+  }
+
+  async function renderApprovals() {
+    const month = ($("approvalMonth").value || currentMonthInput()).replace("-", "");
+    const snap = await get(ref(db, `companies/${companyCode}/requests/${month}`));
+    const rows = snap.exists()
+      ? Object.entries(snap.val()).map(([id, v]) => ({ id, ...v })).filter(r => r.deleteMe !== true)
+      : [];
+
+    rows.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+
+    $("approvalList").innerHTML = rows.map(r => `
+      <div class="card" style="box-shadow:none;">
+        <p>
+          <strong>${r.workerCode || ""} ${r.workerName || ""}</strong>
+          <span class="pill ${r.status || "pending"}">${labelStatus(r.status)}</span>
+        </p>
+        <p>${r.date || ""} / ${labelType(r.type)} / ${r.startTime || ""}〜${r.endTime || ""}</p>
+        <p>${r.reason || ""}</p>
+        <div class="row noPrint">
+          <div><button class="green" data-approve-request="${r.id}" ${r.status !== "pending" ? "disabled" : ""}>承認</button></div>
+          <div><button class="red" data-reject-request="${r.id}" ${r.status !== "pending" ? "disabled" : ""}>否決</button></div>
+        </div>
+      </div>
+    `).join("") || `<p class="small">申請はありません。</p>`;
+
+    document.querySelectorAll("[data-approve-request]").forEach(btn => {
+      btn.addEventListener("click", () => decideRequest(month, btn.dataset.approveRequest, "approved"));
+    });
+
+    document.querySelectorAll("[data-reject-request]").forEach(btn => {
+      btn.addEventListener("click", () => decideRequest(month, btn.dataset.rejectRequest, "rejected"));
+    });
+  }
+
+  async function decideRequest(month, requestId, status) {
+    const path = `companies/${companyCode}/requests/${month}/${requestId}`;
+    const snap = await get(ref(db, path));
+    if (!snap.exists()) return;
+
+    const r = snap.val();
+
+    await update(ref(db, path), {
+      status,
+      decidedAt: nowIso(),
+      decidedBy: currentUser.uid
+    });
+
+    if (status === "approved" && r.type === "correction") {
+      await applyCorrectionRequest(r);
+    }
+
+    await addLog("edits", {
+      action: "request_decision",
+      requestId,
+      status,
+      request: r
+    });
+
+    await loadCompany();
+    await renderApprovals();
+    await renderMonthly();
+    await renderToday();
+  }
+
+  async function applyCorrectionRequest(r) {
+    const worker = companyData.workers?.[r.workerId] || {};
+    const month = ymKey(r.date);
+    const key = ymdKey(r.date);
+
+    const clockInAt = isoFromDateTime(r.date, r.startTime);
+    const clockOutAt = isoFromDateTime(r.date, r.endTime);
+    const calc = calcAttendance(clockInAt, clockOutAt);
+
+    await update(ref(db, `companies/${companyCode}/attendance/${month}/${r.workerId}/${key}`), {
+      date: r.date,
+      workerId: r.workerId,
+      workerCode: r.workerCode || worker.code || r.workerId,
+      workerName: r.workerName || worker.name || "",
+      clockInAt,
+      clockOutAt,
+      breakMinutes: calc.breakMinutes,
+      workMinutes: calc.workMinutes,
+      actualMinutes: calc.actualMinutes,
+      manualEdited: true,
+      notes: "打刻修正申請を承認して反映",
+      updatedAt: nowIso()
+    });
+  }
+
+  async function renderErrors() {
+    const month = ($("errorMonth").value || currentMonthInput()).replace("-", "");
+    const snap = await get(ref(db, `companies/${companyCode}/errors/${month}`));
+    const rows = snap.exists()
+      ? Object.entries(snap.val()).map(([id, v]) => ({ id, ...v })).filter(e => e.deleteMe !== true)
+      : [];
+
+    rows.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+
+    $("errorList").innerHTML = rows.map(e => `
+      <div class="card" style="box-shadow:none;">
+        <p>
+          <strong>${e.workerCode || ""} ${e.workerName || ""}</strong>
+          <span class="pill ${e.status || "pending"}">${labelStatus(e.status)}</span>
+        </p>
+        <p>${e.date || ""} / ${e.type || ""}</p>
+        <p>${e.message || ""}</p>
+        <div class="row noPrint">
+          ${e.gps?.mapUrl ? `<div><button class="blue" data-map="${e.gps.mapUrl}">Googleマップで確認</button></div>` : ""}
+          <div><button class="green" data-approve-error="${e.id}" ${e.status !== "pending" ? "disabled" : ""}>承認</button></div>
+          <div><button class="red" data-reject-error="${e.id}" ${e.status !== "pending" ? "disabled" : ""}>否決</button></div>
+        </div>
+      </div>
+    `).join("") || `<p class="small">打刻エラーはありません。</p>`;
+
+    document.querySelectorAll("[data-map]").forEach(btn => {
+      btn.addEventListener("click", () => window.open(btn.dataset.map, "_blank"));
+    });
+
+    document.querySelectorAll("[data-approve-error]").forEach(btn => {
+      btn.addEventListener("click", () => decideError(month, btn.dataset.approveError, "approved"));
+    });
+
+    document.querySelectorAll("[data-reject-error]").forEach(btn => {
+      btn.addEventListener("click", () => decideError(month, btn.dataset.rejectError, "rejected"));
+    });
+  }
+
+  async function decideError(month, errorId, status) {
+    const path = `companies/${companyCode}/errors/${month}/${errorId}`;
+    const snap = await get(ref(db, path));
+    if (!snap.exists()) return;
+
+    const e = snap.val();
+
+    await update(ref(db, path), {
+      status,
+      decidedAt: nowIso(),
+      decidedBy: currentUser.uid
+    });
+
+    if (e.type === "location_mismatch" && e.workerId && e.date) {
+      const aMonth = ymKey(e.date);
+      const key = ymdKey(e.date);
+      await update(ref(db, `companies/${companyCode}/attendance/${aMonth}/${e.workerId}/${key}`), {
+        locationApproval: status,
+        updatedAt: nowIso()
+      });
+    }
+
+    await addLog("edits", {
+      action: "error_decision",
+      errorId,
+      status,
+      error: e
+    });
+
+    await renderErrors();
+    await renderToday();
+    await renderMonthly();
+  }
+
+  function renderWorkerSelects() {
+    const workers = getWorkersArray(false);
+    $("editWorker").innerHTML = workers.map(w => `
+      <option value="${w.id}">${w.code || w.id} / ${w.name || ""}</option>
+    `).join("");
+  }
+
+  async function loadEditAttendance() {
+    const date = $("editDate").value;
+    const workerId = $("editWorker").value;
+
+    if (!date || !workerId) {
+      showStatus("editStatus", "対象日とワーカーを選択してください。", "ng");
+      return;
+    }
+
+    const month = ymKey(date);
+    const key = ymdKey(date);
+    const snap = await get(ref(db, `companies/${companyCode}/attendance/${month}/${workerId}/${key}`));
+    const a = snap.exists() ? snap.val() : {};
+
+    $("editClockIn").value = hm(a.clockInAt);
+    $("editClockOut").value = hm(a.clockOutAt);
+    $("editBreak").value = a.breakMinutes || 0;
+    $("editLocationApproval").value = a.locationApproval || "none";
+    $("editNotes").value = a.notes || "";
+
+    showStatus("editStatus", "勤怠データを読み込みました。", "ok");
+  }
+
+  async function saveEditAttendance() {
+    const date = $("editDate").value;
+    const workerId = $("editWorker").value;
+
+    if (!date || !workerId) {
+      showStatus("editStatus", "対象日とワーカーを選択してください。", "ng");
+      return;
+    }
+
+    const worker = companyData.workers?.[workerId] || {};
+    const clockIn = $("editClockIn").value;
+    const clockOut = $("editClockOut").value;
+    const breakMinutes = Number($("editBreak").value || 0);
+    const locationApproval = $("editLocationApproval").value;
+    const notes = clean($("editNotes").value);
+
+    const clockInAt = clockIn ? isoFromDateTime(date, clockIn) : "";
+    const clockOutAt = clockOut ? isoFromDateTime(date, clockOut) : "";
+    const calc = calcAttendance(clockInAt, clockOutAt, breakMinutes);
+
+    const month = ymKey(date);
+    const key = ymdKey(date);
+
+    const beforeSnap = await get(ref(db, `companies/${companyCode}/attendance/${month}/${workerId}/${key}`));
+    const before = beforeSnap.exists() ? beforeSnap.val() : null;
+
+    await update(ref(db, `companies/${companyCode}/attendance/${month}/${workerId}/${key}`), {
+      date,
+      workerId,
+      workerCode: worker.code || workerId,
+      workerName: worker.name || "",
+      clockInAt,
+      clockOutAt,
+      breakMinutes: calc.breakMinutes,
+      workMinutes: calc.workMinutes,
+      actualMinutes: calc.actualMinutes,
+      locationApproval,
+      manualEdited: true,
+      notes,
+      updatedAt: nowIso()
+    });
+
+    await addLog("edits", {
+      action: "manual_attendance_edit",
+      workerId,
+      date,
+      before,
+      after: {
+        clockInAt,
+        clockOutAt,
+        breakMinutes: calc.breakMinutes,
+        workMinutes: calc.workMinutes,
+        actualMinutes: calc.actualMinutes,
+        locationApproval,
+        notes
+      }
+    });
+
+    showStatus("editStatus", "勤怠を手動保存しました。", "ok");
+
+    await renderToday();
+    await renderMonthly();
+  }
+
+  function renderWorkers() {
+    const workers = getWorkersArray(true);
+
+    $("workerBody").innerHTML = workers.map(w => {
+      const active = w.active !== false;
+      return `
+        <tr>
+          <td>${w.code || w.id}</td>
+          <td>${w.name || ""}</td>
+          <td>${w.loginPasscode || ""}</td>
+          <td>${w.employmentType || ""}</td>
+          <td>${w.workStart || ""}〜${w.workEnd || ""}</td>
+          <td><span class="pill ${active ? "approved" : "rejected"}">${active ? "有効" : "無効"}</span></td>
+          <td>
+            <button class="gray" data-edit-worker="${w.id}">編集</button>
+            <button class="${active ? "red" : "green"}" data-toggle-worker="${w.id}">
+              ${active ? "無効化" : "有効化"}
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join("") || `<tr><td colspan="7">ワーカーが登録されていません。</td></tr>`;
+
+    document.querySelectorAll("[data-edit-worker]").forEach(btn => {
+      btn.addEventListener("click", () => fillWorkerForm(btn.dataset.editWorker));
+    });
+
+    document.querySelectorAll("[data-toggle-worker]").forEach(btn => {
+      btn.addEventListener("click", () => toggleWorker(btn.dataset.toggleWorker));
+    });
+
+    renderWorkerSelects();
+  }
+
+  function fillWorkerForm(id) {
+    const w = companyData.workers?.[id];
+    if (!w) return;
+
+    $("workerCode").value = w.code || id;
+    $("workerName").value = w.name || "";
+    $("workerPasscode").value = w.loginPasscode || "";
+    $("employmentType").value = w.employmentType || "正社員";
+    $("workStart").value = w.workStart || companyData.settings?.work?.defaultStart || "08:00";
+    $("workEnd").value = w.workEnd || companyData.settings?.work?.defaultEnd || "17:00";
+    $("usualLat").value = w.usualLocation?.lat || "";
+    $("usualLng").value = w.usualLocation?.lng || "";
+
+    showStatus("workerStatus", "編集内容をフォームに読み込みました。", "ok");
+  }
+
+  async function saveWorker() {
+    const code = clean($("workerCode").value);
+    const name = clean($("workerName").value);
+    const pass = clean($("workerPasscode").value);
+
+    if (!code || !name || !pass) {
+      showStatus("workerStatus", "社員コード・氏名・個別パスワードを入力してください。", "ng");
+      return;
+    }
+
+    const workerId = safeKey(code);
+    const old = companyData.workers?.[workerId] || {};
+    const lat = $("usualLat").value;
+    const lng = $("usualLng").value;
+
+    const usualLocation = lat && lng ? {
+      lat: Number(lat),
+      lng: Number(lng)
+    } : (old.usualLocation || null);
+
+    const data = {
+      code,
+      name,
+      loginPasscode: pass,
+      employmentType: $("employmentType").value,
+      active: old.active === false ? false : true,
+      workStart: $("workStart").value || "08:00",
+      workEnd: $("workEnd").value || "17:00",
+      usualLocation,
+      lastClockGps: old.lastClockGps || null,
+      createdAt: old.createdAt || nowIso(),
+      updatedAt: nowIso()
+    };
+
+    await update(ref(db, `companies/${companyCode}/workers/${workerId}`), data);
+
+    await addLog("edits", {
+      action: "save_worker",
+      workerId,
+      data
+    });
+
+    $("workerCode").value = "";
+    $("workerName").value = "";
+    $("workerPasscode").value = "";
+    $("usualLat").value = "";
+    $("usualLng").value = "";
+
+    await loadCompany();
+    renderWorkers();
+    await renderToday();
+
+    showStatus("workerStatus", "ワーカーを保存しました。", "ok");
+  }
+
+  async function toggleWorker(id) {
+    const w = companyData.workers?.[id];
+    if (!w) return;
+
+    const next = w.active === false;
+
+    await update(ref(db, `companies/${companyCode}/workers/${id}`), {
+      active: next,
+      updatedAt: nowIso()
+    });
+
+    await addLog("edits", {
+      action: next ? "activate_worker" : "disable_worker",
+      workerId: id
+    });
+
+    await loadCompany();
+    renderWorkers();
+    await renderToday();
+  }
+
+  function loadSettingsForm() {
+    $("companyName").value = companyData.companyInfo?.companyName || "";
+    $("closeDay").value = companyData.settings?.close?.closeDay || "end";
+    $("defaultStart").value = companyData.settings?.work?.defaultStart || "08:00";
+    $("defaultEnd").value = companyData.settings?.work?.defaultEnd || "17:00";
+    $("break6").value = companyData.settings?.breakRules?.rule1?.deductMinutes ?? 45;
+    $("break8").value = companyData.settings?.breakRules?.rule2?.deductMinutes ?? 60;
+    $("gpsMismatch").value = companyData.settings?.gps?.locationMismatchMeters || 300;
   }
 
   async function saveSettings() {
-    try {
-      const companyName = clean($("companyName").value);
-      const closeDay = $("closeDay").value;
-      const retentionMonths = Number($("retentionMonths").value || 3);
-      const defaultStart = $("defaultStart").value || "08:00";
-      const defaultEnd = $("defaultEnd").value || "17:00";
-      const longShiftErrorMinutes = Number($("longShiftErrorMinutes").value || 720);
-      const break6 = Number($("breakRule6").value || 45);
-      const break8 = Number($("breakRule8").value || 60);
-      const gpsMeters = Number($("locationMismatchMeters").value || 300);
+    const updates = {};
 
-      await update(ref(db, `companies/${companyCode}`), {
-        "companyInfo/companyName": companyName,
-        "companyInfo/updatedAt": nowIso(),
-        "settings/close/closeDay": closeDay,
-        "settings/close/retentionMonths": retentionMonths,
-        "settings/work/defaultStart": defaultStart,
-        "settings/work/defaultEnd": defaultEnd,
-        "settings/work/longShiftErrorMinutes": longShiftErrorMinutes,
-        "settings/breakRules/rule1/overMinutes": 360,
-        "settings/breakRules/rule1/deductMinutes": break6,
-        "settings/breakRules/rule2/overMinutes": 480,
-        "settings/breakRules/rule2/deductMinutes": break8,
-        "settings/gps/locationMismatchMeters": gpsMeters
+    updates[`companies/${companyCode}/companyInfo/companyName`] = clean($("companyName").value);
+    updates[`companies/${companyCode}/companyInfo/updatedAt`] = nowIso();
+
+    updates[`companies/${companyCode}/settings/close/closeDay`] = $("closeDay").value;
+    updates[`companies/${companyCode}/settings/close/retentionMonths`] = 3;
+
+    updates[`companies/${companyCode}/settings/work/defaultStart`] = $("defaultStart").value || "08:00";
+    updates[`companies/${companyCode}/settings/work/defaultEnd`] = $("defaultEnd").value || "17:00";
+
+    updates[`companies/${companyCode}/settings/breakRules/rule1/overMinutes`] = 360;
+    updates[`companies/${companyCode}/settings/breakRules/rule1/deductMinutes`] = Number($("break6").value || 45);
+    updates[`companies/${companyCode}/settings/breakRules/rule2/overMinutes`] = 480;
+    updates[`companies/${companyCode}/settings/breakRules/rule2/deductMinutes`] = Number($("break8").value || 60);
+
+    updates[`companies/${companyCode}/settings/gps/locationMismatchMeters`] = Number($("gpsMismatch").value || 300);
+
+    await update(ref(db), updates);
+
+    await addLog("edits", {
+      action: "save_settings"
+    });
+
+    await loadCompany();
+    loadSettingsForm();
+    showStatus("settingsStatus", "設定を保存しました。", "ok");
+  }
+
+  function gpsText(gps) {
+    if (!gps || gps.lat == null || gps.lng == null) return "";
+    return `${gps.lat},${gps.lng}`;
+  }
+
+  function csvEscape(v) {
+    const s = String(v ?? "");
+    return `"${s.replaceAll('"', '""')}"`;
+  }
+
+  async function buildCsvRows(monthValue) {
+    const range = getDateRangeForMonth(monthValue);
+    const dates = dateList(range.start, range.end);
+    const months = collectMonths(dates);
+    const atts = await loadAttendanceMonths(months);
+    const reqs = await loadRequestMonths(months);
+    const workers = getWorkersArray(false);
+
+    const rows = [];
+
+    workers.forEach(w => {
+      dates.forEach(date => {
+        const m = ymKey(date);
+        const key = ymdKey(date);
+        const a = atts?.[m]?.[w.id]?.[key] || null;
+
+        const early = approvedMinutes(reqs, w.id, date, "early");
+        const overtime = approvedMinutes(reqs, w.id, date, "overtime");
+        const holiday = approvedMinutes(reqs, w.id, date, "holiday");
+        const absent = !isHoliday(date) && !a?.clockInAt && !a?.clockOutAt ? "欠勤" : "";
+
+        rows.push({
+          companyName: companyData.companyInfo?.companyName || companyCode,
+          period: `${todayFormat(range.start)}〜${todayFormat(range.end)}`,
+          workerCode: w.code || w.id,
+          workerName: w.name || "",
+          date,
+          clockIn: hm(a?.clockInAt),
+          clockOut: hm(a?.clockOutAt),
+          inGps: gpsText(a?.inGps),
+          outGps: gpsText(a?.outGps),
+          breakMinutes: a?.breakMinutes || 0,
+          actual: minToHHMM(a?.actualMinutes || 0),
+          early: early ? minToHHMM(early) : "",
+          overtime: overtime ? minToHHMM(overtime) : "",
+          holiday: holiday ? minToHHMM(holiday) : "",
+          late: lateMinutes(w, a) ? minToHHMM(lateMinutes(w, a)) : "",
+          earlyLeave: earlyLeaveMinutes(w, a) ? minToHHMM(earlyLeaveMinutes(w, a)) : "",
+          absent,
+          approval: approvalText(reqs, w.id, date),
+          notes: a?.notes || ""
+        });
       });
+    });
 
-      await update(ref(db, `companies/${companyCode}/logs/edits/${Date.now()}`), {
-        action: "save_settings",
-        adminUid: currentUser.uid,
-        createdAt: nowIso()
-      });
+    return { rows, range, months };
+  }
 
-      await loadCompany();
-      renderCompany();
+  function todayFormat(d) {
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
 
-      showStatus("settingsStatus", "設定を保存しました。", "ok");
+  function downloadCsv(filename, rows) {
+    const headers = [
+      "会社名",
+      "対象期間",
+      "社員コード",
+      "氏名",
+      "日付",
+      "出勤",
+      "退勤",
+      "出勤GPS",
+      "退勤GPS",
+      "休憩",
+      "実働",
+      "早出",
+      "残業",
+      "休日出勤",
+      "遅刻",
+      "早退",
+      "欠勤",
+      "承認状況",
+      "備考"
+    ];
 
-    } catch (e) {
-      console.error(e);
-      showStatus("settingsStatus", "設定保存に失敗しました。", "ng");
+    const body = rows.map(r => [
+      r.companyName,
+      r.period,
+      r.workerCode,
+      r.workerName,
+      r.date,
+      r.clockIn,
+      r.clockOut,
+      r.inGps,
+      r.outGps,
+      `${r.breakMinutes}分`,
+      r.actual,
+      r.early,
+      r.overtime,
+      r.holiday,
+      r.late,
+      r.earlyLeave,
+      r.absent,
+      r.approval,
+      r.notes
+    ].map(csvEscape).join(","));
+
+    const csv = "\uFEFF" + headers.map(csvEscape).join(",") + "\n" + body.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = filename;
+    a.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  async function closeAndCsv() {
+    const msg = "この期間の勤怠を締めてCSVを出力します。\n締め後は原則編集できません。\nよろしいですか？";
+    if (!confirm(msg)) return;
+
+    const monthValue = $("closeMonth").value || currentMonthInput();
+    const { rows, range, months } = await buildCsvRows(monthValue);
+
+    downloadCsv(`smart-kintai_${companyCode}_${monthValue}.csv`, rows);
+
+    await addLog("closures", {
+      action: "close_csv",
+      monthValue,
+      period: `${todayFormat(range.start)}〜${todayFormat(range.end)}`,
+      rows: rows.length
+    });
+
+    showStatus("closeStatus", "CSVを出力しました。保存後、必要であれば対象期間データを削除できます。", "ok");
+
+    if (confirm("CSVは必ず保存しましたか？\n保存済みの場合のみ、この期間の勤怠データを削除できます。\nこの操作は元に戻せません。\n削除しますか？")) {
+      await deleteMonths(months, "csv_after_delete");
+      showStatus("closeStatus", "CSV出力後、対象期間データを削除しました。", "warn");
     }
   }
 
+  async function deleteMonths(months, reason) {
+    const deleted = [];
+
+    for (const m of months) {
+      await remove(ref(db, `companies/${companyCode}/attendance/${m}`));
+      await remove(ref(db, `companies/${companyCode}/requests/${m}`));
+      await remove(ref(db, `companies/${companyCode}/errors/${m}`));
+      deleted.push(m);
+    }
+
+    await addLog("cleanup", {
+      action: reason,
+      deletedMonths: deleted
+    });
+
+    await loadCompany();
+    await renderToday();
+    await renderMonthly();
+  }
+
+  async function printStatements() {
+    const monthValue = $("closeMonth").value || currentMonthInput();
+    const { rows, range } = await buildCsvRows(monthValue);
+    const byWorker = {};
+
+    rows.forEach(r => {
+      const key = `${r.workerCode}_${r.workerName}`;
+      if (!byWorker[key]) byWorker[key] = [];
+      byWorker[key].push(r);
+    });
+
+    let html = `
+      <!doctype html>
+      <html lang="ja">
+      <head>
+        <meta charset="utf-8">
+        <title>勤怠明細</title>
+        <style>
+          body { font-family: system-ui, sans-serif; color:#111; }
+          h1 { font-size:20px; }
+          h2 { font-size:16px; margin-top:28px; border-bottom:2px solid #111; padding-bottom:6px; }
+          table { width:100%; border-collapse:collapse; font-size:11px; margin-top:8px; }
+          th, td { border:1px solid #ccc; padding:5px; text-align:left; }
+          th { background:#f3f4f6; }
+          .page { page-break-after:always; }
+          .total { margin-top:8px; font-weight:bold; }
+        </style>
+      </head>
+      <body>
+        <h1>勤怠明細</h1>
+        <p>会社名：${companyData.companyInfo?.companyName || companyCode}</p>
+        <p>対象期間：${todayFormat(range.start)}〜${todayFormat(range.end)}</p>
+    `;
+
+    Object.entries(byWorker).forEach(([workerName, list]) => {
+      const totalActual = list.reduce((sum, r) => sum + parseHHMM(r.actual), 0);
+      const totalOvertime = list.reduce((sum, r) => sum + parseHHMM(r.overtime), 0);
+      const totalHoliday = list.reduce((sum, r) => sum + parseHHMM(r.holiday), 0);
+
+      html += `
+        <div class="page">
+          <h2>${workerName}</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>日付</th>
+                <th>出勤</th>
+                <th>退勤</th>
+                <th>休憩</th>
+                <th>実働</th>
+                <th>承認済み残業</th>
+                <th>休日出勤</th>
+                <th>備考</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${list.map(r => `
+                <tr>
+                  <td>${r.date}</td>
+                  <td>${r.clockIn || ""}</td>
+                  <td>${r.clockOut || ""}</td>
+                  <td>${r.breakMinutes}分</td>
+                  <td>${r.actual || ""}</td>
+                  <td>${r.overtime || ""}</td>
+                  <td>${r.holiday || ""}</td>
+                  <td>${r.notes || r.absent || ""}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+          <p class="total">月合計 実働：${minToHHMM(totalActual)} / 承認済み残業：${minToHHMM(totalOvertime)} / 休日出勤：${minToHHMM(totalHoliday)}</p>
+        </div>
+      `;
+    });
+
+    html += `</body></html>`;
+
+    const win = window.open("", "_blank");
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 500);
+  }
+
+  function parseHHMM(v) {
+    if (!v) return 0;
+    const [h, m] = String(v).split(":").map(Number);
+    return (h || 0) * 60 + (m || 0);
+  }
+
+  async function checkOldData() {
+    const border = new Date();
+    border.setMonth(border.getMonth() - 3);
+    const borderYm = `${border.getFullYear()}${pad(border.getMonth() + 1)}`;
+
+    const snap = await get(ref(db, `companies/${companyCode}`));
+    const data = snap.exists() ? snap.val() : {};
+    const targets = new Set();
+
+    ["attendance", "requests", "errors"].forEach(cat => {
+      Object.keys(data[cat] || {}).forEach(m => {
+        if (m !== "_placeholder" && m < borderYm) targets.add(m);
+      });
+    });
+
+    const months = [...targets];
+
+    if (!months.length) {
+      $("oldDataBox").innerHTML = `<p class="small">3か月を超えた削除対象データはありません。</p>`;
+      return;
+    }
+
+    $("oldDataBox").innerHTML = `
+      <div class="dangerBox">
+        <strong>3か月経過した勤怠データがあります。</strong><br>
+        削除対象：${months.join(", ")}<br>
+        CSVやPDFを保管済みの場合のみ削除してください。
+        <br><br>
+        <button id="deleteOldDataBtn" class="red">3か月超データを削除</button>
+      </div>
+    `;
+
+    $("deleteOldDataBtn").addEventListener("click", async () => {
+      if (!confirm("3か月超データを削除します。\nこの操作は元に戻せません。\n削除しますか？")) return;
+      await deleteMonths(months, "delete_over_3_months");
+      $("oldDataBox").innerHTML = `<p class="small">削除しました。</p>`;
+    });
+  }
+
   async function init() {
-    companyCode = getCompanyCodeFromUrlOrStorage();
+    companyCode = getUrlCompany();
 
     onAuthStateChanged(auth, async (user) => {
       try {
@@ -789,7 +1705,6 @@
         currentUser = user;
 
         const ok = await checkAdmin(user.uid);
-
         if (!ok) {
           await signOut(auth);
           localStorage.removeItem("smart_kintai_admin");
@@ -799,44 +1714,50 @@
 
         await loadCompany();
 
-        renderCompany();
-        renderWorkers();
-        await loadToday();
+        $("headerInfo").textContent = `${companyData.companyInfo?.companyName || companyCode} / 管理者`;
 
-        showStatus("mainStatus", "管理者ログイン確認済みです。", "ok");
+        const month = currentMonthInput();
+        $("monthlyMonth").value = month;
+        $("approvalMonth").value = month;
+        $("errorMonth").value = month;
+        $("closeMonth").value = month;
+        $("editDate").value = todayDate();
+
+        loadSettingsForm();
+        renderWorkers();
+        await renderToday();
+        await renderMonthly();
+        await renderApprovals();
+        await renderErrors();
 
       } catch (e) {
         console.error(e);
-        showStatus("mainStatus", "管理者画面の読み込みに失敗しました。FirebaseデータまたはRulesを確認してください。", "ng");
+        alert("管理者画面を開けません。Firebase設定またはログイン状態を確認してください。");
+        location.href = "index.html";
       }
     });
   }
 
-  document.querySelectorAll(".tabBtn").forEach(btn => {
+  document.querySelectorAll(".tabs button").forEach(btn => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".tabBtn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
       document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
-
       btn.classList.add("active");
       $(btn.dataset.tab).classList.add("active");
     });
   });
 
+  $("reloadTodayBtn").addEventListener("click", renderToday);
+  $("loadMonthlyBtn").addEventListener("click", renderMonthly);
+  $("loadApprovalsBtn").addEventListener("click", renderApprovals);
+  $("loadErrorsBtn").addEventListener("click", renderErrors);
+  $("loadEditBtn").addEventListener("click", loadEditAttendance);
+  $("saveEditBtn").addEventListener("click", saveEditAttendance);
   $("saveWorkerBtn").addEventListener("click", saveWorker);
-  $("clearWorkerFormBtn").addEventListener("click", clearWorkerForm);
-
-  $("reloadWorkersBtn").addEventListener("click", async () => {
-    await loadCompany();
-    renderWorkers();
-    showStatus("workerStatus", "再読込しました。", "ok");
-  });
-
-  $("reloadTodayBtn").addEventListener("click", async () => {
-    await loadCompany();
-    await loadToday();
-  });
-
   $("saveSettingsBtn").addEventListener("click", saveSettings);
+  $("closeCsvBtn").addEventListener("click", closeAndCsv);
+  $("printStatementsBtn").addEventListener("click", printStatements);
+  $("checkOldDataBtn").addEventListener("click", checkOldData);
 
   $("logoutBtn").addEventListener("click", async () => {
     await signOut(auth);
