@@ -10,8 +10,6 @@
     .card{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 4px 16px rgba(0,0,0,.08)}
     h1{font-size:22px;margin:8px 0}
     h2{font-size:17px;margin:0 0 10px}
-    .row{display:flex;gap:8px;flex-wrap:wrap}
-    .pill{display:inline-block;background:#eef2ff;color:#3730a3;padding:6px 10px;border-radius:999px;font-weight:700;font-size:13px;margin:3px 3px 3px 0}
     label{display:block;font-weight:700;margin-top:10px}
     input,select,textarea{width:100%;box-sizing:border-box;padding:11px;font-size:16px;border:1px solid #d1d5db;border-radius:10px;margin-top:5px}
     textarea{min-height:80px}
@@ -25,10 +23,10 @@
     .ok{color:#166534}
     .ng{color:#dc2626}
     .small{font-size:13px;color:#6b7280;line-height:1.6}
+    .pill{display:inline-block;background:#eef2ff;color:#3730a3;padding:6px 10px;border-radius:999px;font-weight:700;font-size:13px;margin:3px}
     table{width:100%;border-collapse:collapse;font-size:14px}
     th,td{border-bottom:1px solid #e5e7eb;padding:8px;text-align:left;vertical-align:top}
     th{background:#f9fafb}
-    .hidden{display:none}
   </style>
 </head>
 <body>
@@ -187,22 +185,13 @@
     };
   }
 
-  function getDistanceMeters(lat1,lng1,lat2,lng2){
-    const R=6371000;
-    const toRad=x=>x*Math.PI/180;
-    const dLat=toRad(lat2-lat1);
-    const dLng=toRad(lng2-lng1);
-    const a=Math.sin(dLat/2)**2+
-      Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
-    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-  }
-
   function getPosition(){
     return new Promise((resolve,reject)=>{
       if(!navigator.geolocation){
         reject(new Error("位置情報を利用できません。"));
         return;
       }
+
       navigator.geolocation.getCurrentPosition(
         pos=>{
           resolve({
@@ -212,12 +201,22 @@
             recordedAt: now()
           });
         },
-        err=>{
+        ()=>{
           reject(new Error("位置情報を確認できませんでした。端末の位置情報設定を確認してください。"));
         },
         {enableHighAccuracy:true,timeout:15000,maximumAge:0}
       );
     });
+  }
+
+  function getDistanceMeters(lat1,lng1,lat2,lng2){
+    const R=6371000;
+    const toRad=x=>x*Math.PI/180;
+    const dLat=toRad(lat2-lat1);
+    const dLng=toRad(lng2-lng1);
+    const a=Math.sin(dLat/2)**2+
+      Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
   }
 
   async function loadLogin(){
@@ -271,13 +270,10 @@
     const path = `companies/${companyCode}/attendance/${ym()}/${workerId}/${ymd()}`;
     todayAttendance = await getJson(path);
 
-    const inTime = todayAttendance?.inTime || "未打刻";
-    const outTime = todayAttendance?.outTime || "未打刻";
-
     $("todayInfo").innerHTML = `
       日付：${dateText()}<br>
-      出勤：${inTime}<br>
-      退勤：${outTime}<br>
+      出勤：${todayAttendance?.inTime || "未打刻"}<br>
+      退勤：${todayAttendance?.outTime || "未打刻"}<br>
       所定時間：${worker.workStart || "未設定"} 〜 ${worker.workEnd || "未設定"}
     `;
   }
@@ -309,7 +305,10 @@
   }
 
   async function checkLocationDifference(gps){
-    const threshold = Number((await getJson(`companies/${companyCode}/settings/locationCheck/distanceThresholdMeters`)) || 300);
+    const enabled = await getJson(`companies/${companyCode}/settings/locationCheck/enabled`);
+    if(enabled === false) return false;
+
+    const threshold = Number(await getJson(`companies/${companyCode}/settings/locationCheck/distanceThresholdMeters`) || 300);
 
     let base = null;
 
@@ -397,7 +396,6 @@
 
       const gps = await getPosition();
       const inTime = timeText();
-
       const locationDifferent = await checkLocationDifference(gps);
 
       const data = {
@@ -468,7 +466,6 @@
 
       const gps = await getPosition();
       const outTime = timeText();
-
       const locationDifferent = await checkLocationDifference(gps);
 
       const breakMinutes = calcBreakMinutes(todayAttendance.inTime,outTime);
@@ -596,17 +593,10 @@
     $("errorList").innerHTML=html;
   }
 
-  $("clockInBtn").addEventListener("click", clockIn);
-
-  $("clockOutBtn").addEventListener("mousedown", startHold);
-  $("clockOutBtn").addEventListener("touchstart", startHold);
-  $("clockOutBtn").addEventListener("mouseup", cancelHold);
-  $("clockOutBtn").addEventListener("mouseleave", cancelHold);
-  $("clockOutBtn").addEventListener("touchend", cancelHold);
-  $("clockOutBtn").addEventListener("touchcancel", cancelHold);
-
   function startHold(e){
     e.preventDefault();
+    if($("clockOutBtn").disabled) return;
+
     holdDone=false;
     $("clockOutBtn").textContent="そのまま長押し...";
     holdTimer=setTimeout(()=>{
@@ -615,13 +605,23 @@
     },1200);
   }
 
-  function cancelHold(e){
+  function cancelHold(){
     if(holdTimer) clearTimeout(holdTimer);
     holdTimer=null;
+
     if(!holdDone && !$("clockOutBtn").disabled){
       $("clockOutBtn").textContent="退勤";
     }
   }
+
+  $("clockInBtn").addEventListener("click", clockIn);
+
+  $("clockOutBtn").addEventListener("mousedown", startHold);
+  $("clockOutBtn").addEventListener("touchstart", startHold, {passive:false});
+  $("clockOutBtn").addEventListener("mouseup", cancelHold);
+  $("clockOutBtn").addEventListener("mouseleave", cancelHold);
+  $("clockOutBtn").addEventListener("touchend", cancelHold);
+  $("clockOutBtn").addEventListener("touchcancel", cancelHold);
 
   $("sendRequestBtn").addEventListener("click", sendRequest);
 
