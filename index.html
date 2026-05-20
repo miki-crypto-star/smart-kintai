@@ -2,200 +2,74 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Smart勤怠</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>スマート勤怠</title>
   <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f3f4f6;
-      color: #111827;
-    }
-
-    header {
-      background: #111827;
-      color: white;
-      padding: 18px 14px;
-      text-align: center;
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 22px;
-    }
-
-    header p {
-      margin: 6px 0 0;
-      font-size: 13px;
-      opacity: .9;
-    }
-
-    main {
-      max-width: 760px;
-      margin: 20px auto;
-      padding: 0 14px 40px;
-    }
-
-    .card {
-      background: white;
-      border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 18px;
-      margin-bottom: 16px;
-      box-shadow: 0 8px 20px rgba(0,0,0,.06);
-    }
-
-    h2 {
-      margin: 0 0 12px;
-      font-size: 18px;
-    }
-
-    label {
-      display: block;
-      margin: 12px 0 6px;
-      font-size: 13px;
-      font-weight: 800;
-    }
-
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 10px;
-      font-size: 16px;
-      background: white;
-    }
-
-    button {
-      width: 100%;
-      margin-top: 16px;
-      border: 0;
-      border-radius: 12px;
-      padding: 13px;
-      font-size: 16px;
-      font-weight: 800;
-      color: white;
-      background: #111827;
-      cursor: pointer;
-    }
-
-    button.employee {
-      background: #2563eb;
-    }
-
-    button.gray {
-      background: #6b7280;
-    }
-
-    button:disabled {
-      opacity: .65;
-      cursor: not-allowed;
-    }
-
-    .status {
-      display: none;
-      margin-top: 12px;
-      padding: 10px;
-      border-radius: 10px;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    .ok {
-      display: block;
-      background: #ecfdf5;
-      color: #065f46;
-      border: 1px solid #a7f3d0;
-    }
-
-    .ng {
-      display: block;
-      background: #fef2f2;
-      color: #991b1b;
-      border: 1px solid #fecaca;
-    }
-
-    .warn {
-      display: block;
-      background: #fffbeb;
-      color: #92400e;
-      border: 1px solid #fde68a;
-    }
-
-    .note {
-      font-size: 13px;
-      color: #4b5563;
-      line-height: 1.7;
-      margin: 0;
-    }
+    body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f3f4f6;margin:0;padding:16px;color:#111827}
+    .wrap{max-width:520px;margin:0 auto}
+    .card{background:#fff;border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+    h1{font-size:24px;margin:10px 0}
+    h2{font-size:18px;margin:0 0 12px}
+    label{display:block;font-weight:700;margin-top:12px}
+    input{width:100%;box-sizing:border-box;padding:12px;font-size:16px;border:1px solid #d1d5db;border-radius:10px;margin-top:6px}
+    button{width:100%;padding:13px;font-size:16px;font-weight:700;border:0;border-radius:12px;margin-top:14px;cursor:pointer}
+    .primary{background:#2563eb;color:#fff}
+    .dark{background:#111827;color:#fff}
+    .gray{background:#e5e7eb;color:#111827}
+    .msg{margin-top:12px;font-weight:700;white-space:pre-wrap}
+    .small{font-size:13px;color:#6b7280;line-height:1.6}
+    .hidden{display:none}
   </style>
 </head>
-
 <body>
-<header>
-  <h1>Smart勤怠</h1>
-  <p>勤怠管理・集計作業削減・打刻ミス防止</p>
-</header>
+<div class="wrap">
+  <h1>スマート勤怠</h1>
 
-<main>
-  <section class="card">
-    <h2>管理者ログイン</h2>
-
-    <label>会社コード</label>
-    <input id="adminCompanyCode" value="demo" autocomplete="off">
-
-    <label>メールアドレス</label>
-    <input id="adminEmail" type="email" value="admin-demo@smart-kintai.local" autocomplete="email">
-
-    <label>パスワード</label>
-    <input id="adminPassword" type="password" value="admin1234" autocomplete="current-password">
-
-    <button id="adminLoginBtn">管理者画面へ</button>
-    <div id="adminStatus" class="status"></div>
-  </section>
-
-  <section class="card">
+  <div class="card">
     <h2>従業員ログイン</h2>
 
     <label>会社コード</label>
-    <input id="employeeCompanyCode" value="demo" autocomplete="off">
+    <input id="workerCompanyCode" placeholder="例：sample-company">
 
     <label>社員コードまたは氏名</label>
-    <input id="employeeKeyword" autocomplete="off" placeholder="例：岸澤 / 001 / A001">
+    <input id="workerCode" placeholder="例：岸澤 / 001 / A001">
 
     <label>個別パスワード</label>
-    <input id="employeePasscode" type="password" autocomplete="current-password">
+    <input id="workerPasscode" type="password" placeholder="個別パスワード">
 
-    <button id="employeeLoginBtn" class="employee">従業員画面へ</button>
-    <div id="employeeStatus" class="status"></div>
-  </section>
+    <button class="primary" id="workerLoginBtn">従業員としてログイン</button>
+    <div class="msg" id="workerMsg"></div>
+  </div>
 
-  <section class="card">
-    <h2>この端末の保存情報</h2>
-    <p class="note">
-      同じ端末では、次回から自動で画面を開きます。共有端末の場合は、使用後にログアウトしてください。
-    </p>
-    <button id="clearEmployeeLoginBtn" class="gray">従業員の自動ログインを解除</button>
-    <div id="clearStatus" class="status"></div>
-  </section>
-</main>
+  <div class="card">
+    <h2>管理者ログイン</h2>
+
+    <label>会社コード</label>
+    <input id="adminCompanyCode" placeholder="例：sample-company">
+
+    <label>メールアドレス</label>
+    <input id="adminEmail" type="email" placeholder="admin@example.com">
+
+    <label>パスワード</label>
+    <input id="adminPassword" type="password" placeholder="パスワード">
+
+    <button class="dark" id="adminLoginBtn">管理者としてログイン</button>
+    <button class="gray hidden" id="adminGoBtn">管理画面へ進む</button>
+    <button class="gray hidden" id="adminLogoutBtn">ログアウト</button>
+
+    <div class="msg" id="adminMsg"></div>
+    <p class="small">同じ端末では、管理者のログイン状態を保持します。</p>
+  </div>
+</div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-
   import {
     getAuth,
-    onAuthStateChanged,
     signInWithEmailAndPassword,
+    onAuthStateChanged,
     signOut
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-
-  import {
-    getDatabase,
-    ref,
-    get
-  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAokZ3FYeL3qjmZOHhVznhwykvyQu8axp8",
@@ -210,222 +84,158 @@
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  const db = getDatabase(app);
+  const DB_URL = firebaseConfig.databaseURL;
 
   const $ = (id) => document.getElementById(id);
 
-  function clean(value) {
-    return String(value || "").trim();
+  function sanitizeKey(value){
+    return String(value || "").trim().replace(/[.#$/\[\]]/g, "_");
   }
 
-  function showStatus(id, message, type = "ok") {
+  function now(){
+    return Date.now();
+  }
+
+  async function getJson(path){
+    const res = await fetch(`${DB_URL}/${path}.json`);
+    if(!res.ok) throw new Error("通信に失敗しました");
+    return await res.json();
+  }
+
+  function setMsg(id, text, isError=false){
     const el = $(id);
-    el.textContent = message;
-    el.className = "status " + type;
+    el.textContent = text;
+    el.style.color = isError ? "#dc2626" : "#166534";
   }
 
-  function setButtonLoading(button, loadingText, isLoading) {
-    if (!button.dataset.originalText) {
-      button.dataset.originalText = button.textContent;
-    }
-
-    button.disabled = isLoading;
-    button.textContent = isLoading ? loadingText : button.dataset.originalText;
+  function disableButton(btn, disabled, text){
+    btn.disabled = disabled;
+    btn.textContent = text;
+    btn.style.opacity = disabled ? ".6" : "1";
   }
 
-  function safeKey(value) {
-    return clean(value).replace(/[.#$/\[\]]/g, "_");
-  }
+  async function workerLogin(){
+    const btn = $("workerLoginBtn");
+    const companyCode = sanitizeKey($("workerCompanyCode").value);
+    const workerInput = sanitizeKey($("workerCode").value);
+    const passcode = $("workerPasscode").value.trim();
 
-  async function getCompany(companyCode) {
-    const snap = await get(ref(db, `companies/${companyCode}`));
-    return snap.exists() ? snap.val() : null;
-  }
-
-  async function getAdminMember(companyCode, uid) {
-    const snap = await get(ref(db, `companies/${companyCode}/members/${uid}`));
-    return snap.exists() ? snap.val() : null;
-  }
-
-  function findEmployee(workers, keyword) {
-    const key = clean(keyword);
-    if (!workers || !key) return null;
-
-    const directKey = safeKey(key);
-
-    if (workers[directKey] && workers[directKey].active !== false) {
-      return {
-        employeeId: directKey,
-        ...workers[directKey]
-      };
-    }
-
-    const found = Object.entries(workers).find(([id, employee]) => {
-      if (!employee || employee.active === false) return false;
-      return String(employee.code || "") === key || String(employee.name || "") === key;
-    });
-
-    if (!found) return null;
-
-    return {
-      employeeId: found[0],
-      ...found[1]
-    };
-  }
-
-  function saveEmployeeSession(data) {
-    localStorage.setItem("smart_kintai_employee", JSON.stringify(data));
-  }
-
-  function getEmployeeSession() {
-    try {
-      return JSON.parse(localStorage.getItem("smart_kintai_employee") || "null");
-    } catch {
-      return null;
-    }
-  }
-
-  function getAdminSession() {
-    try {
-      return JSON.parse(localStorage.getItem("smart_kintai_admin") || "null");
-    } catch {
-      return null;
-    }
-  }
-
-  $("adminLoginBtn").addEventListener("click", async () => {
-    const btn = $("adminLoginBtn");
-    const companyCode = clean($("adminCompanyCode").value);
-    const email = clean($("adminEmail").value);
-    const password = $("adminPassword").value;
-
-    if (!companyCode || !email || !password) {
-      showStatus("adminStatus", "会社コード・メールアドレス・パスワードを入力してください。", "ng");
+    if(!companyCode || !workerInput || !passcode){
+      setMsg("workerMsg", "会社コード、社員コードまたは氏名、個別パスワードを入力してください。", true);
       return;
     }
 
-    try {
-      setButtonLoading(btn, "処理中...", true);
-      showStatus("adminStatus", "確認しています。", "ok");
+    try{
+      disableButton(btn, true, "処理中...");
 
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const uid = userCredential.user.uid;
+      const worker = await getJson(`companies/${companyCode}/workers/${workerInput}`);
 
-      const member = await getAdminMember(companyCode, uid);
-
-      if (!member || member.role !== "admin" || member.active !== true) {
-        await signOut(auth);
-        localStorage.removeItem("smart_kintai_admin");
-        showStatus("adminStatus", "管理者として登録されていません。", "ng");
-        return;
+      if(!worker || worker.active !== true){
+        throw new Error("従業員情報が見つかりません。");
       }
 
-      localStorage.setItem("smart_kintai_admin", JSON.stringify({
+      if(String(worker.loginPasscode || "") !== passcode){
+        throw new Error("個別パスワードが違います。");
+      }
+
+      const loginData = {
         companyCode,
-        uid,
-        email,
-        role: "admin",
-        loginAt: new Date().toISOString()
-      }));
+        workerId: workerInput,
+        workerCode: worker.code || workerInput,
+        workerName: worker.name || workerInput,
+        loginAt: now()
+      };
+
+      localStorage.setItem("smartKintaiWorkerLogin", JSON.stringify(loginData));
+      setMsg("workerMsg", "ログインしました。");
+
+      location.href = `worker.html?company=${encodeURIComponent(companyCode)}&worker=${encodeURIComponent(workerInput)}`;
+
+    }catch(e){
+      setMsg("workerMsg", e.message || "ログインできませんでした。", true);
+    }finally{
+      disableButton(btn, false, "従業員としてログイン");
+    }
+  }
+
+  async function adminLogin(){
+    const btn = $("adminLoginBtn");
+    const companyCode = sanitizeKey($("adminCompanyCode").value);
+    const email = $("adminEmail").value.trim();
+    const password = $("adminPassword").value;
+
+    if(!companyCode || !email || !password){
+      setMsg("adminMsg", "会社コード、メールアドレス、パスワードを入力してください。", true);
+      return;
+    }
+
+    try{
+      disableButton(btn, true, "処理中...");
+
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const uid = cred.user.uid;
+
+      const allowed = await getJson(`companies/${companyCode}/admins/${uid}`);
+
+      if(allowed !== true){
+        await signOut(auth);
+        throw new Error("この会社の管理者として登録されていません。");
+      }
+
+      localStorage.setItem("smartKintaiAdminCompanyCode", companyCode);
+      setMsg("adminMsg", "管理者ログインしました。");
 
       location.href = `admin.html?company=${encodeURIComponent(companyCode)}`;
 
-    } catch (e) {
-      console.error(e);
-      showStatus("adminStatus", "ログインできません。入力内容を確認してください。", "ng");
-    } finally {
-      setButtonLoading(btn, "処理中...", false);
+    }catch(e){
+      setMsg("adminMsg", e.message || "管理者ログインできませんでした。", true);
+    }finally{
+      disableButton(btn, false, "管理者としてログイン");
     }
-  });
+  }
 
-  $("employeeLoginBtn").addEventListener("click", async () => {
-    const btn = $("employeeLoginBtn");
-    const companyCode = clean($("employeeCompanyCode").value);
-    const keyword = clean($("employeeKeyword").value);
-    const passcode = $("employeePasscode").value;
-
-    if (!companyCode || !keyword || !passcode) {
-      showStatus("employeeStatus", "会社コード・社員コードまたは氏名・個別パスワードを入力してください。", "ng");
-      return;
-    }
-
-    try {
-      setButtonLoading(btn, "処理中...", true);
-      showStatus("employeeStatus", "確認しています。", "ok");
-
-      const company = await getCompany(companyCode);
-
-      if (!company) {
-        showStatus("employeeStatus", "会社コードが見つかりません。", "ng");
-        return;
-      }
-
-      const employee = findEmployee(company.workers, keyword);
-
-      if (!employee) {
-        showStatus("employeeStatus", "従業員が見つかりません。管理者に確認してください。", "ng");
-        return;
-      }
-
-      if (employee.active === false) {
-        showStatus("employeeStatus", "この従業員は現在利用できません。", "ng");
-        return;
-      }
-
-      if (String(employee.loginPasscode || "") !== String(passcode)) {
-        showStatus("employeeStatus", "個別パスワードが違います。", "ng");
-        return;
-      }
-
-      saveEmployeeSession({
-        companyCode,
-        employeeId: employee.employeeId,
-        employeeCode: employee.code || employee.employeeId,
-        employeeName: employee.name || "",
-        role: "employee",
-        loginAt: new Date().toISOString()
-      });
-
-      location.href = `worker.html?company=${encodeURIComponent(companyCode)}&employee=${encodeURIComponent(employee.employeeId)}`;
-
-    } catch (e) {
-      console.error(e);
-      showStatus("employeeStatus", "ログインできません。通信状態を確認してください。", "ng");
-    } finally {
-      setButtonLoading(btn, "処理中...", false);
-    }
-  });
-
-  $("clearEmployeeLoginBtn").addEventListener("click", () => {
-    localStorage.removeItem("smart_kintai_employee");
-    showStatus("clearStatus", "この端末の従業員ログイン情報を解除しました。", "ok");
-  });
-
-  window.addEventListener("load", () => {
-    const employeeSession = getEmployeeSession();
-
-    if (employeeSession?.companyCode && employeeSession?.employeeId) {
-      location.href = `worker.html?company=${encodeURIComponent(employeeSession.companyCode)}&employee=${encodeURIComponent(employeeSession.employeeId)}`;
-      return;
+  async function checkAutoLogin(){
+    const workerLogin = localStorage.getItem("smartKintaiWorkerLogin");
+    if(workerLogin){
+      try{
+        const data = JSON.parse(workerLogin);
+        if(data.companyCode && data.workerId){
+          location.href = `worker.html?company=${encodeURIComponent(data.companyCode)}&worker=${encodeURIComponent(data.workerId)}`;
+          return;
+        }
+      }catch(e){}
     }
 
     onAuthStateChanged(auth, async (user) => {
-      if (!user) return;
+      const companyCode = localStorage.getItem("smartKintaiAdminCompanyCode");
 
-      const savedAdmin = getAdminSession();
-      const companyCode = savedAdmin?.companyCode || "demo";
-
-      try {
-        const member = await getAdminMember(companyCode, user.uid);
-
-        if (member?.role === "admin" && member?.active === true) {
-          location.href = `admin.html?company=${encodeURIComponent(companyCode)}`;
-        }
-      } catch (e) {
-        console.warn(e);
+      if(user && companyCode){
+        $("adminGoBtn").classList.remove("hidden");
+        $("adminLogoutBtn").classList.remove("hidden");
+        setMsg("adminMsg", "管理者ログイン状態を確認しました。");
       }
     });
+  }
+
+  $("workerLoginBtn").addEventListener("click", workerLogin);
+  $("adminLoginBtn").addEventListener("click", adminLogin);
+
+  $("adminGoBtn").addEventListener("click", () => {
+    const companyCode = localStorage.getItem("smartKintaiAdminCompanyCode");
+    if(companyCode){
+      location.href = `admin.html?company=${encodeURIComponent(companyCode)}`;
+    }
   });
+
+  $("adminLogoutBtn").addEventListener("click", async () => {
+    await signOut(auth);
+    localStorage.removeItem("smartKintaiAdminCompanyCode");
+    setMsg("adminMsg", "ログアウトしました。");
+    $("adminGoBtn").classList.add("hidden");
+    $("adminLogoutBtn").classList.add("hidden");
+  });
+
+  checkAutoLogin();
 </script>
 </body>
 </html>
