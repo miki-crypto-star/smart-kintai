@@ -31,7 +31,7 @@
     }
 
     main {
-      max-width: 900px;
+      max-width: 920px;
       margin: 18px auto;
       padding: 0 14px 40px;
     }
@@ -259,7 +259,7 @@
   <section class="card">
     <h2>申請</h2>
     <p class="small">
-      早出・残業・休日出勤は任意申請制です。承認済みのみ集計に反映します。
+      早出・残業・休日出勤は任意申請制です。打刻だけでは自動で早出・残業・休日出勤扱いにしません。承認済みのみ集計に反映します。
     </p>
 
     <label>申請種別</label>
@@ -443,7 +443,7 @@
 
     workerData = companyData.workers[workerId];
 
-    if (workerData.active === false) {
+    if (workerData.deleteMe === true || workerData.active === false) {
       throw new Error("このワーカーは無効化されています。");
     }
   }
@@ -543,7 +543,9 @@
       message,
       gps: gps || null,
       status: "pending",
-      createdAt: nowIso()
+      createdAt: nowIso(),
+      decidedAt: "",
+      decidedBy: ""
     });
   }
 
@@ -566,6 +568,49 @@
     }
 
     return false;
+  }
+
+  async function checkPreviousErrors() {
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+
+    const yDate = `${yesterday.getFullYear()}-${pad(yesterday.getMonth() + 1)}-${pad(yesterday.getDate())}`;
+    const yMonth = ymKey(yDate);
+    const yKey = ymdKey(yDate);
+
+    const ySnap = await get(ref(db, `companies/${companyCode}/attendance/${yMonth}/${workerId}/${yKey}`));
+    if (ySnap.exists()) {
+      const a = ySnap.val();
+      if (a.clockInAt && !a.clockOutAt && !a.missingOutReported) {
+        await createError("missing_out_next_day", "前日の退勤打刻がありません。", null, yDate);
+        await update(ref(db, `companies/${companyCode}/attendance/${yMonth}/${workerId}/${yKey}`), {
+          missingOutReported: true,
+          updatedAt: nowIso()
+        });
+      }
+    }
+
+    const dateStr = todayDate();
+    const month = ymKey(dateStr);
+    const key = ymdKey(dateStr);
+
+    const tSnap = await get(ref(db, `companies/${companyCode}/attendance/${month}/${workerId}/${key}`));
+    if (tSnap.exists()) {
+      const a = tSnap.val();
+      const limit = Number(companyData.settings?.work?.longShiftErrorMinutes || 720);
+
+      if (a.clockInAt && !a.clockOutAt && !a.longShiftReported) {
+        const elapsed = Math.round((Date.now() - new Date(a.clockInAt).getTime()) / 60000);
+        if (elapsed > limit) {
+          await createError("long_shift_no_out", "長時間、退勤打刻がありません。", null, dateStr);
+          await update(ref(db, `companies/${companyCode}/attendance/${month}/${workerId}/${key}`), {
+            longShiftReported: true,
+            updatedAt: nowIso()
+          });
+        }
+      }
+    }
   }
 
   async function clockIn() {
@@ -837,11 +882,11 @@
     ]);
 
     const requests = reqSnap.exists()
-      ? Object.entries(reqSnap.val()).map(([id, v]) => ({ id, ...v })).filter(r => r.workerId === workerId)
+      ? Object.entries(reqSnap.val()).map(([id, v]) => ({ id, ...v })).filter(r => r.workerId === workerId && r.deleteMe !== true)
       : [];
 
     const errors = errSnap.exists()
-      ? Object.entries(errSnap.val()).map(([id, v]) => ({ id, ...v })).filter(e => e.workerId === workerId)
+      ? Object.entries(errSnap.val()).map(([id, v]) => ({ id, ...v })).filter(e => e.workerId === workerId && e.deleteMe !== true)
       : [];
 
     const html = [
@@ -870,6 +915,7 @@
   }
 
   async function reloadAll() {
+    await checkPreviousErrors();
     await loadToday();
     await loadAttendanceTable();
     await loadHistory();
