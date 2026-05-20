@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>ワーカー画面｜Smart勤怠</title>
+  <title>従業員画面｜Smart勤怠</title>
   <style>
     body {
       margin: 0;
@@ -31,7 +31,7 @@
     }
 
     main {
-      max-width: 920px;
+      max-width: 900px;
       margin: 18px auto;
       padding: 0 14px 40px;
     }
@@ -96,6 +96,11 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
+    }
+
+    button:disabled {
+      opacity: .65;
+      cursor: not-allowed;
     }
 
     button.red {
@@ -229,7 +234,7 @@
 
 <body>
 <header>
-  <h1>Smart勤怠 ワーカー画面</h1>
+  <h1>Smart勤怠 従業員画面</h1>
   <p id="headerInfo">確認中...</p>
 </header>
 
@@ -237,7 +242,7 @@
   <section class="card">
     <h2>本日の打刻</h2>
     <p class="small">
-      GPSは打刻時のみ取得します。常時GPS追跡・位置履歴・打刻写真は使いません。
+      出勤・退勤時のみ位置情報を確認します。常時追跡や写真撮影は行いません。
     </p>
 
     <div class="clockButtonArea">
@@ -259,7 +264,7 @@
   <section class="card">
     <h2>申請</h2>
     <p class="small">
-      早出・残業・休日出勤は任意申請制です。打刻だけでは自動で早出・残業・休日出勤扱いにしません。承認済みのみ集計に反映します。
+      早出・残業・休日出勤は申請制です。承認されたものだけ集計に反映されます。
     </p>
 
     <label>申請種別</label>
@@ -363,9 +368,10 @@
   const $ = (id) => document.getElementById(id);
 
   let companyCode = "";
-  let workerId = "";
+  let employeeId = "";
   let companyData = null;
-  let workerData = null;
+  let employeeData = null;
+  let isProcessingClock = false;
 
   function clean(value) {
     return String(value || "").trim();
@@ -417,9 +423,22 @@
     el.className = "status " + type;
   }
 
-  function getSavedWorkerSession() {
+  function setClockButtonsDisabled(disabled, label) {
+    $("clockInBtn").disabled = disabled;
+    $("clockOutBtn").disabled = disabled;
+
+    if (disabled) {
+      if (label === "in") $("clockInBtn").textContent = "処理中...";
+      if (label === "out") $("clockOutBtn").textContent = "処理中...";
+    } else {
+      $("clockInBtn").textContent = "出勤";
+      $("clockOutBtn").textContent = "退勤 1.2秒長押し";
+    }
+  }
+
+  function getSavedEmployeeSession() {
     try {
-      return JSON.parse(localStorage.getItem("smart_kintai_worker") || "null");
+      return JSON.parse(localStorage.getItem("smart_kintai_employee") || "null");
     } catch {
       return null;
     }
@@ -437,21 +456,21 @@
 
     companyData = snap.val();
 
-    if (!companyData.workers || !companyData.workers[workerId]) {
-      throw new Error("ワーカーが見つかりません。");
+    if (!companyData.workers || !companyData.workers[employeeId]) {
+      throw new Error("従業員が見つかりません。");
     }
 
-    workerData = companyData.workers[workerId];
+    employeeData = companyData.workers[employeeId];
 
-    if (workerData.deleteMe === true || workerData.active === false) {
-      throw new Error("このワーカーは無効化されています。");
+    if (employeeData.active === false) {
+      throw new Error("この従業員は無効化されています。");
     }
   }
 
-  function getGps() {
+  function getPosition() {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        reject(new Error("この端末ではGPSを取得できません。"));
+        reject(new Error("位置情報を確認できません。"));
         return;
       }
 
@@ -530,38 +549,36 @@
     };
   }
 
-  async function createError(type, message, gps, dateStr) {
+  async function createError(type, message, position, dateStr) {
     const month = ymKey(dateStr);
     const errorRef = push(ref(db, `companies/${companyCode}/errors/${month}`));
 
     await set(errorRef, {
       type,
-      workerId,
-      workerCode: workerData.code || workerId,
-      workerName: workerData.name || "",
+      employeeId,
+      employeeCode: employeeData.code || employeeId,
+      employeeName: employeeData.name || "",
       date: dateStr,
       message,
-      gps: gps || null,
+      gps: position || null,
       status: "pending",
-      createdAt: nowIso(),
-      decidedAt: "",
-      decidedBy: ""
+      createdAt: nowIso()
     });
   }
 
-  async function checkLocationMismatch(gps, dateStr) {
+  async function checkLocationMismatch(position, dateStr) {
     const threshold = Number(companyData.settings?.gps?.locationMismatchMeters || 300);
-    const base = workerData.usualLocation || workerData.lastClockGps || null;
+    const base = employeeData.usualLocation || employeeData.lastClockGps || null;
 
-    if (!base || !gps) return false;
+    if (!base || !position) return false;
 
-    const dist = distanceMeters(base, gps);
+    const dist = distanceMeters(base, position);
 
     if (dist > threshold) {
       await createError(
         "location_mismatch",
-        `通常打刻場所または前回打刻場所と異なります。距離：約${Math.round(dist)}m`,
-        gps,
+        `通常の打刻場所または前回の打刻場所と異なります。距離：約${Math.round(dist)}m`,
+        position,
         dateStr
       );
       return true;
@@ -570,57 +587,17 @@
     return false;
   }
 
-  async function checkPreviousErrors() {
-    const now = new Date();
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-
-    const yDate = `${yesterday.getFullYear()}-${pad(yesterday.getMonth() + 1)}-${pad(yesterday.getDate())}`;
-    const yMonth = ymKey(yDate);
-    const yKey = ymdKey(yDate);
-
-    const ySnap = await get(ref(db, `companies/${companyCode}/attendance/${yMonth}/${workerId}/${yKey}`));
-    if (ySnap.exists()) {
-      const a = ySnap.val();
-      if (a.clockInAt && !a.clockOutAt && !a.missingOutReported) {
-        await createError("missing_out_next_day", "前日の退勤打刻がありません。", null, yDate);
-        await update(ref(db, `companies/${companyCode}/attendance/${yMonth}/${workerId}/${yKey}`), {
-          missingOutReported: true,
-          updatedAt: nowIso()
-        });
-      }
-    }
-
-    const dateStr = todayDate();
-    const month = ymKey(dateStr);
-    const key = ymdKey(dateStr);
-
-    const tSnap = await get(ref(db, `companies/${companyCode}/attendance/${month}/${workerId}/${key}`));
-    if (tSnap.exists()) {
-      const a = tSnap.val();
-      const limit = Number(companyData.settings?.work?.longShiftErrorMinutes || 720);
-
-      if (a.clockInAt && !a.clockOutAt && !a.longShiftReported) {
-        const elapsed = Math.round((Date.now() - new Date(a.clockInAt).getTime()) / 60000);
-        if (elapsed > limit) {
-          await createError("long_shift_no_out", "長時間、退勤打刻がありません。", null, dateStr);
-          await update(ref(db, `companies/${companyCode}/attendance/${month}/${workerId}/${key}`), {
-            longShiftReported: true,
-            updatedAt: nowIso()
-          });
-        }
-      }
-    }
-  }
-
   async function clockIn() {
+    if (isProcessingClock) return;
+
     try {
-      showStatus("clockStatus", "GPSを取得しています。", "ok");
+      isProcessingClock = true;
+      setClockButtonsDisabled(true, "in");
 
       const dateStr = todayDate();
       const month = ymKey(dateStr);
       const key = ymdKey(dateStr);
-      const path = `companies/${companyCode}/attendance/${month}/${workerId}/${key}`;
+      const path = `companies/${companyCode}/attendance/${month}/${employeeId}/${key}`;
       const attRef = ref(db, path);
       const snap = await get(attRef);
       const current = snap.exists() ? snap.val() : null;
@@ -632,23 +609,23 @@
 
       if (current?.clockInAt) {
         await createError("double_in", "二重出勤です。すでに出勤打刻があります。", null, dateStr);
-        showStatus("clockStatus", "すでに出勤打刻があります。二重出勤として管理者に表示しました。", "warn");
+        showStatus("clockStatus", "すでに出勤打刻があります。管理者へ確認事項として表示しました。", "warn");
         await reloadAll();
         return;
       }
 
-      const gps = await getGps();
-      const mismatch = await checkLocationMismatch(gps, dateStr);
+      const position = await getPosition();
+      const mismatch = await checkLocationMismatch(position, dateStr);
       const now = nowIso();
 
       await set(attRef, {
         date: dateStr,
-        workerId,
-        workerCode: workerData.code || workerId,
-        workerName: workerData.name || "",
+        employeeId,
+        employeeCode: employeeData.code || employeeId,
+        employeeName: employeeData.name || "",
         clockInAt: now,
         clockOutAt: "",
-        inGps: gps,
+        inGps: position,
         outGps: null,
         breakMinutes: 0,
         workMinutes: 0,
@@ -656,58 +633,64 @@
         closed: false,
         locationApproval: mismatch ? "pending" : "none",
         manualEdited: false,
-        notes: mismatch ? "場所違い確認待ち" : "",
+        notes: mismatch ? "場所確認待ち" : "",
         createdAt: now,
         updatedAt: now
       });
 
-      await update(ref(db, `companies/${companyCode}/workers/${workerId}`), {
+      await update(ref(db, `companies/${companyCode}/workers/${employeeId}`), {
         lastClockGps: {
-          lat: gps.lat,
-          lng: gps.lng,
+          lat: position.lat,
+          lng: position.lng,
           at: now
         },
         updatedAt: now
       });
 
-      showStatus("clockStatus", mismatch ? "出勤しました。場所違いとして管理者確認待ちです。" : "出勤しました。", mismatch ? "warn" : "ok");
+      showStatus("clockStatus", mismatch ? "出勤しました。打刻場所は管理者確認待ちです。" : "出勤しました。", mismatch ? "warn" : "ok");
 
       await loadCompany();
       await reloadAll();
 
     } catch (e) {
       console.error(e);
-      showStatus("clockStatus", "出勤打刻に失敗しました。GPS許可・通信状態を確認してください。", "ng");
+      showStatus("clockStatus", "出勤打刻できませんでした。位置情報の許可または通信状態を確認してください。", "ng");
+    } finally {
+      isProcessingClock = false;
+      setClockButtonsDisabled(false);
     }
   }
 
   async function clockOut() {
+    if (isProcessingClock) return;
+
     try {
-      showStatus("clockStatus", "GPSを取得しています。", "ok");
+      isProcessingClock = true;
+      setClockButtonsDisabled(true, "out");
 
       const dateStr = todayDate();
       const month = ymKey(dateStr);
       const key = ymdKey(dateStr);
-      const path = `companies/${companyCode}/attendance/${month}/${workerId}/${key}`;
+      const path = `companies/${companyCode}/attendance/${month}/${employeeId}/${key}`;
       const attRef = ref(db, path);
       const snap = await get(attRef);
       const current = snap.exists() ? snap.val() : null;
 
-      const gps = await getGps();
+      const position = await getPosition();
       const now = nowIso();
 
       if (!current?.clockInAt) {
-        await createError("out_without_in", "出勤なし退勤です。", gps, dateStr);
+        await createError("out_without_in", "出勤打刻がない状態で退勤打刻されました。", position, dateStr);
 
         await set(attRef, {
           date: dateStr,
-          workerId,
-          workerCode: workerData.code || workerId,
-          workerName: workerData.name || "",
+          employeeId,
+          employeeCode: employeeData.code || employeeId,
+          employeeName: employeeData.name || "",
           clockInAt: "",
           clockOutAt: now,
           inGps: null,
-          outGps: gps,
+          outGps: position,
           breakMinutes: 0,
           workMinutes: 0,
           actualMinutes: 0,
@@ -719,7 +702,7 @@
           updatedAt: now
         });
 
-        showStatus("clockStatus", "出勤打刻がない状態で退勤しました。管理者にエラー表示しました。", "warn");
+        showStatus("clockStatus", "退勤しました。出勤打刻がないため管理者確認待ちです。", "warn");
         await reloadAll();
         return;
       }
@@ -729,37 +712,40 @@
         return;
       }
 
-      const mismatch = await checkLocationMismatch(gps, dateStr);
+      const mismatch = await checkLocationMismatch(position, dateStr);
       const calc = calcAttendance(current.clockInAt, now);
 
       await update(attRef, {
         clockOutAt: now,
-        outGps: gps,
+        outGps: position,
         breakMinutes: calc.breakMinutes,
         workMinutes: calc.workMinutes,
         actualMinutes: calc.actualMinutes,
         locationApproval: mismatch || current.locationApproval === "pending" ? "pending" : (current.locationApproval || "none"),
-        notes: mismatch ? "場所違い確認待ち" : (current.notes || ""),
+        notes: mismatch ? "場所確認待ち" : (current.notes || ""),
         updatedAt: now
       });
 
-      await update(ref(db, `companies/${companyCode}/workers/${workerId}`), {
+      await update(ref(db, `companies/${companyCode}/workers/${employeeId}`), {
         lastClockGps: {
-          lat: gps.lat,
-          lng: gps.lng,
+          lat: position.lat,
+          lng: position.lng,
           at: now
         },
         updatedAt: now
       });
 
-      showStatus("clockStatus", mismatch ? "退勤しました。場所違いとして管理者確認待ちです。" : "退勤しました。", mismatch ? "warn" : "ok");
+      showStatus("clockStatus", mismatch ? "退勤しました。打刻場所は管理者確認待ちです。" : "退勤しました。", mismatch ? "warn" : "ok");
 
       await loadCompany();
       await reloadAll();
 
     } catch (e) {
       console.error(e);
-      showStatus("clockStatus", "退勤打刻に失敗しました。GPS許可・通信状態を確認してください。", "ng");
+      showStatus("clockStatus", "退勤打刻できませんでした。位置情報の許可または通信状態を確認してください。", "ng");
+    } finally {
+      isProcessingClock = false;
+      setClockButtonsDisabled(false);
     }
   }
 
@@ -781,14 +767,17 @@
         return;
       }
 
+      $("sendRequestBtn").disabled = true;
+      $("sendRequestBtn").textContent = "処理中...";
+
       const month = ymKey(date);
       const reqRef = push(ref(db, `companies/${companyCode}/requests/${month}`));
 
       await set(reqRef, {
         type,
-        workerId,
-        workerCode: workerData.code || workerId,
-        workerName: workerData.name || "",
+        employeeId,
+        employeeCode: employeeData.code || employeeId,
+        employeeName: employeeData.name || "",
         date,
         startTime,
         endTime,
@@ -806,7 +795,10 @@
 
     } catch (e) {
       console.error(e);
-      showStatus("requestStatus", "申請に失敗しました。", "ng");
+      showStatus("requestStatus", "申請できませんでした。時間をおいて再度お試しください。", "ng");
+    } finally {
+      $("sendRequestBtn").disabled = false;
+      $("sendRequestBtn").textContent = "申請する";
     }
   }
 
@@ -815,7 +807,7 @@
     const month = ymKey(dateStr);
     const key = ymdKey(dateStr);
 
-    const snap = await get(ref(db, `companies/${companyCode}/attendance/${month}/${workerId}/${key}`));
+    const snap = await get(ref(db, `companies/${companyCode}/attendance/${month}/${employeeId}/${key}`));
     const a = snap.exists() ? snap.val() : null;
 
     if (!a) {
@@ -828,16 +820,23 @@
       <p><strong>退勤：</strong>${hm(a.clockOutAt) || "-"}</p>
       <p><strong>休憩：</strong>${a.breakMinutes || 0}分</p>
       <p><strong>実働：</strong>${minToHHMM(a.actualMinutes || 0)}</p>
-      <p><strong>場所確認：</strong>${a.locationApproval || "none"}</p>
+      <p><strong>場所確認：</strong>${labelLocation(a.locationApproval)}</p>
       <p><strong>備考：</strong>${a.notes || ""}</p>
     `;
+  }
+
+  function labelLocation(value) {
+    if (value === "approved") return "承認済み";
+    if (value === "rejected") return "否決";
+    if (value === "pending") return "確認待ち";
+    return "通常";
   }
 
   async function loadAttendanceTable() {
     const monthInput = $("monthInput").value || currentMonthInput();
     const month = monthInput.replace("-", "");
 
-    const snap = await get(ref(db, `companies/${companyCode}/attendance/${month}/${workerId}`));
+    const snap = await get(ref(db, `companies/${companyCode}/attendance/${month}/${employeeId}`));
     const rows = snap.exists() ? Object.values(snap.val()) : [];
 
     rows.sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
@@ -849,7 +848,7 @@
         <td>${hm(a.clockOutAt) || "-"}</td>
         <td>${a.breakMinutes || 0}分</td>
         <td>${minToHHMM(a.actualMinutes || 0)}</td>
-        <td>${a.locationApproval || "none"}</td>
+        <td>${labelLocation(a.locationApproval)}</td>
         <td>${a.closed ? "締め済み" : "未締め"}</td>
         <td>${a.notes || ""}</td>
       </tr>
@@ -882,11 +881,11 @@
     ]);
 
     const requests = reqSnap.exists()
-      ? Object.entries(reqSnap.val()).map(([id, v]) => ({ id, ...v })).filter(r => r.workerId === workerId && r.deleteMe !== true)
+      ? Object.entries(reqSnap.val()).map(([id, v]) => ({ id, ...v })).filter(r => r.employeeId === employeeId)
       : [];
 
     const errors = errSnap.exists()
-      ? Object.entries(errSnap.val()).map(([id, v]) => ({ id, ...v })).filter(e => e.workerId === workerId && e.deleteMe !== true)
+      ? Object.entries(errSnap.val()).map(([id, v]) => ({ id, ...v })).filter(e => e.employeeId === employeeId)
       : [];
 
     const html = [
@@ -911,11 +910,10 @@
       `)
     ].join("");
 
-    $("historyBox").innerHTML = html || "申請・打刻エラーはありません。";
+    $("historyBox").innerHTML = html || "申請・確認事項はありません。";
   }
 
   async function reloadAll() {
-    await checkPreviousErrors();
     await loadToday();
     await loadAttendanceTable();
     await loadHistory();
@@ -927,10 +925,10 @@
   function startClockOutHold(e) {
     e.preventDefault();
 
+    if (isProcessingClock) return;
     if (clockOutStarted) return;
 
     clockOutStarted = true;
-    showStatus("clockStatus", "退勤を実行するには、このまま1.2秒長押ししてください。", "warn");
 
     clockOutTimer = setTimeout(async () => {
       clockOutTimer = null;
@@ -943,19 +941,18 @@
     if (clockOutTimer) {
       clearTimeout(clockOutTimer);
       clockOutTimer = null;
-      showStatus("clockStatus", "退勤の長押しをキャンセルしました。", "warn");
     }
 
     clockOutStarted = false;
   }
 
   async function init() {
-    const saved = getSavedWorkerSession();
+    const saved = getSavedEmployeeSession();
 
     companyCode = getUrlParam("company") || saved?.companyCode || "";
-    workerId = getUrlParam("worker") || saved?.workerId || "";
+    employeeId = getUrlParam("employee") || saved?.employeeId || "";
 
-    if (!companyCode || !workerId) {
+    if (!companyCode || !employeeId) {
       location.href = "index.html";
       return;
     }
@@ -963,7 +960,7 @@
     try {
       await loadCompany();
 
-      $("headerInfo").textContent = `${companyData.companyInfo?.companyName || companyCode} / ${workerData.name || workerId}`;
+      $("headerInfo").textContent = `${companyData.companyInfo?.companyName || companyCode} / ${employeeData.name || employeeId}`;
       $("requestDate").value = todayDate();
       $("monthInput").value = currentMonthInput();
 
@@ -971,8 +968,8 @@
 
     } catch (e) {
       console.error(e);
-      alert("ワーカー画面を開けません。ログインし直してください。");
-      localStorage.removeItem("smart_kintai_worker");
+      alert("従業員画面を開けません。ログインし直してください。");
+      localStorage.removeItem("smart_kintai_employee");
       location.href = "index.html";
     }
   }
@@ -993,7 +990,7 @@
   $("reloadBtn").addEventListener("click", reloadAll);
 
   $("logoutBtn").addEventListener("click", () => {
-    localStorage.removeItem("smart_kintai_worker");
+    localStorage.removeItem("smart_kintai_employee");
     location.href = "index.html";
   });
 
