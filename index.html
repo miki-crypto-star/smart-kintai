@@ -14,7 +14,7 @@
 
     header {
       background: #111827;
-      color: #fff;
+      color: white;
       padding: 18px 14px;
       text-align: center;
     }
@@ -37,7 +37,7 @@
     }
 
     .card {
-      background: #fff;
+      background: white;
       border: 1px solid #e5e7eb;
       border-radius: 16px;
       padding: 18px;
@@ -64,7 +64,7 @@
       border: 1px solid #d1d5db;
       border-radius: 10px;
       font-size: 16px;
-      background: #fff;
+      background: white;
     }
 
     button {
@@ -75,7 +75,7 @@
       padding: 13px;
       font-size: 16px;
       font-weight: 800;
-      color: #fff;
+      color: white;
       background: #111827;
       cursor: pointer;
     }
@@ -86,6 +86,11 @@
 
     button.gray {
       background: #6b7280;
+    }
+
+    button:disabled {
+      opacity: .65;
+      cursor: not-allowed;
     }
 
     .status {
@@ -122,11 +127,12 @@
       font-size: 13px;
       color: #4b5563;
       line-height: 1.7;
+      margin: 0;
     }
   </style>
 </head>
-<body>
 
+<body>
 <header>
   <h1>Smart勤怠</h1>
   <p>勤怠管理・集計作業削減・打刻ミス防止</p>
@@ -155,22 +161,22 @@
     <label>会社コード</label>
     <input id="employeeCompanyCode" value="demo" autocomplete="off">
 
-    <label>社員コード または 氏名</label>
-    <input id="employeeKeyword" placeholder="管理者から案内された社員コードまたは氏名" autocomplete="off">
+    <label>社員コードまたは氏名</label>
+    <input id="employeeKeyword" autocomplete="off" placeholder="例：岸澤 / 001 / A001">
 
     <label>個別パスワード</label>
-    <input id="employeePasscode" type="password" placeholder="個別パスワード">
+    <input id="employeePasscode" type="password" autocomplete="current-password">
 
     <button id="employeeLoginBtn" class="employee">従業員画面へ</button>
     <div id="employeeStatus" class="status"></div>
   </section>
 
   <section class="card">
-    <h2>この端末のログイン情報</h2>
+    <h2>この端末の保存情報</h2>
     <p class="note">
-      同じ端末では、次回から従業員画面へ自動で進みます。共有端末の場合は、使用後にログアウトしてください。
+      同じ端末では、次回から自動で画面を開きます。共有端末の場合は、使用後にログアウトしてください。
     </p>
-    <button id="clearEmployeeAutoLoginBtn" class="gray">この端末の従業員ログイン情報を解除</button>
+    <button id="clearEmployeeLoginBtn" class="gray">従業員の自動ログインを解除</button>
     <div id="clearStatus" class="status"></div>
   </section>
 </main>
@@ -218,38 +224,45 @@
     el.className = "status " + type;
   }
 
+  function setButtonLoading(button, loadingText, isLoading) {
+    if (!button.dataset.originalText) {
+      button.dataset.originalText = button.textContent;
+    }
+
+    button.disabled = isLoading;
+    button.textContent = isLoading ? loadingText : button.dataset.originalText;
+  }
+
   function safeKey(value) {
     return clean(value).replace(/[.#$/\[\]]/g, "_");
   }
 
   async function getCompany(companyCode) {
     const snap = await get(ref(db, `companies/${companyCode}`));
-    if (!snap.exists()) return null;
-    return snap.val();
+    return snap.exists() ? snap.val() : null;
   }
 
-  async function getMember(companyCode, uid) {
+  async function getAdminMember(companyCode, uid) {
     const snap = await get(ref(db, `companies/${companyCode}/members/${uid}`));
-    if (!snap.exists()) return null;
-    return snap.val();
+    return snap.exists() ? snap.val() : null;
   }
 
   function findEmployee(workers, keyword) {
     const key = clean(keyword);
     if (!workers || !key) return null;
 
-    const safe = safeKey(key);
+    const directKey = safeKey(key);
 
-    if (workers[safe] && workers[safe].active !== false) {
+    if (workers[directKey] && workers[directKey].active !== false) {
       return {
-        employeeId: safe,
-        ...workers[safe]
+        employeeId: directKey,
+        ...workers[directKey]
       };
     }
 
-    const found = Object.entries(workers).find(([id, w]) => {
-      if (!w || w.active === false) return false;
-      return String(w.code || "") === key || String(w.name || "") === key;
+    const found = Object.entries(workers).find(([id, employee]) => {
+      if (!employee || employee.active === false) return false;
+      return String(employee.code || "") === key || String(employee.name || "") === key;
     });
 
     if (!found) return null;
@@ -260,7 +273,11 @@
     };
   }
 
-  function getSavedEmployeeSession() {
+  function saveEmployeeSession(data) {
+    localStorage.setItem("smart_kintai_employee", JSON.stringify(data));
+  }
+
+  function getEmployeeSession() {
     try {
       return JSON.parse(localStorage.getItem("smart_kintai_employee") || "null");
     } catch {
@@ -268,7 +285,7 @@
     }
   }
 
-  function getSavedAdminSession() {
+  function getAdminSession() {
     try {
       return JSON.parse(localStorage.getItem("smart_kintai_admin") || "null");
     } catch {
@@ -276,11 +293,8 @@
     }
   }
 
-  function saveEmployeeSession(data) {
-    localStorage.setItem("smart_kintai_employee", JSON.stringify(data));
-  }
-
   $("adminLoginBtn").addEventListener("click", async () => {
+    const btn = $("adminLoginBtn");
     const companyCode = clean($("adminCompanyCode").value);
     const email = clean($("adminEmail").value);
     const password = $("adminPassword").value;
@@ -291,21 +305,18 @@
     }
 
     try {
-      $("adminLoginBtn").disabled = true;
-      $("adminLoginBtn").textContent = "処理中...";
+      setButtonLoading(btn, "処理中...", true);
       showStatus("adminStatus", "確認しています。", "ok");
 
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const uid = userCredential.user.uid;
 
-      const member = await getMember(companyCode, uid);
+      const member = await getAdminMember(companyCode, uid);
 
       if (!member || member.role !== "admin" || member.active !== true) {
         await signOut(auth);
         localStorage.removeItem("smart_kintai_admin");
         showStatus("adminStatus", "管理者として登録されていません。", "ng");
-        $("adminLoginBtn").disabled = false;
-        $("adminLoginBtn").textContent = "管理者画面へ";
         return;
       }
 
@@ -322,12 +333,13 @@
     } catch (e) {
       console.error(e);
       showStatus("adminStatus", "ログインできません。入力内容を確認してください。", "ng");
-      $("adminLoginBtn").disabled = false;
-      $("adminLoginBtn").textContent = "管理者画面へ";
+    } finally {
+      setButtonLoading(btn, "処理中...", false);
     }
   });
 
   $("employeeLoginBtn").addEventListener("click", async () => {
+    const btn = $("employeeLoginBtn");
     const companyCode = clean($("employeeCompanyCode").value);
     const keyword = clean($("employeeKeyword").value);
     const passcode = $("employeePasscode").value;
@@ -338,16 +350,13 @@
     }
 
     try {
-      $("employeeLoginBtn").disabled = true;
-      $("employeeLoginBtn").textContent = "処理中...";
+      setButtonLoading(btn, "処理中...", true);
       showStatus("employeeStatus", "確認しています。", "ok");
 
       const company = await getCompany(companyCode);
 
       if (!company) {
         showStatus("employeeStatus", "会社コードが見つかりません。", "ng");
-        $("employeeLoginBtn").disabled = false;
-        $("employeeLoginBtn").textContent = "従業員画面へ";
         return;
       }
 
@@ -355,22 +364,16 @@
 
       if (!employee) {
         showStatus("employeeStatus", "従業員が見つかりません。管理者に確認してください。", "ng");
-        $("employeeLoginBtn").disabled = false;
-        $("employeeLoginBtn").textContent = "従業員画面へ";
         return;
       }
 
       if (employee.active === false) {
-        showStatus("employeeStatus", "この従業員は無効化されています。", "ng");
-        $("employeeLoginBtn").disabled = false;
-        $("employeeLoginBtn").textContent = "従業員画面へ";
+        showStatus("employeeStatus", "この従業員は現在利用できません。", "ng");
         return;
       }
 
       if (String(employee.loginPasscode || "") !== String(passcode)) {
         showStatus("employeeStatus", "個別パスワードが違います。", "ng");
-        $("employeeLoginBtn").disabled = false;
-        $("employeeLoginBtn").textContent = "従業員画面へ";
         return;
       }
 
@@ -387,19 +390,19 @@
 
     } catch (e) {
       console.error(e);
-      showStatus("employeeStatus", "ログインできません。時間をおいて再度お試しください。", "ng");
-      $("employeeLoginBtn").disabled = false;
-      $("employeeLoginBtn").textContent = "従業員画面へ";
+      showStatus("employeeStatus", "ログインできません。通信状態を確認してください。", "ng");
+    } finally {
+      setButtonLoading(btn, "処理中...", false);
     }
   });
 
-  $("clearEmployeeAutoLoginBtn").addEventListener("click", () => {
+  $("clearEmployeeLoginBtn").addEventListener("click", () => {
     localStorage.removeItem("smart_kintai_employee");
     showStatus("clearStatus", "この端末の従業員ログイン情報を解除しました。", "ok");
   });
 
   window.addEventListener("load", () => {
-    const employeeSession = getSavedEmployeeSession();
+    const employeeSession = getEmployeeSession();
 
     if (employeeSession?.companyCode && employeeSession?.employeeId) {
       location.href = `worker.html?company=${encodeURIComponent(employeeSession.companyCode)}&employee=${encodeURIComponent(employeeSession.employeeId)}`;
@@ -409,17 +412,17 @@
     onAuthStateChanged(auth, async (user) => {
       if (!user) return;
 
-      const savedAdmin = getSavedAdminSession();
+      const savedAdmin = getAdminSession();
       const companyCode = savedAdmin?.companyCode || "demo";
 
       try {
-        const member = await getMember(companyCode, user.uid);
+        const member = await getAdminMember(companyCode, user.uid);
 
         if (member?.role === "admin" && member?.active === true) {
           location.href = `admin.html?company=${encodeURIComponent(companyCode)}`;
         }
       } catch (e) {
-        console.warn("自動ログイン確認に失敗しました。", e);
+        console.warn(e);
       }
     });
   });
