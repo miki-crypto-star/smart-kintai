@@ -5,28 +5,75 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>管理画面｜スマート勤怠</title>
 <style>
-body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f3f4f6;margin:0;padding:14px;color:#111827}
-.wrap{max-width:1400px;margin:0 auto}
-.card{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:#f3f4f6;
+  margin:0;
+  padding:14px;
+  color:#111827;
+}
+.wrap{max-width:1500px;margin:0 auto}
+.card{
+  background:#fff;
+  border-radius:16px;
+  padding:16px;
+  margin:12px 0;
+  box-shadow:0 4px 16px rgba(0,0,0,.08);
+}
 h1{font-size:24px;margin:0 0 10px}
 h2{font-size:18px;margin:0 0 12px}
+h3{font-size:16px;margin:14px 0 8px}
 label{display:block;font-weight:700;margin-top:10px}
-input,select,textarea{width:100%;box-sizing:border-box;padding:10px;font-size:15px;border:1px solid #d1d5db;border-radius:10px;margin-top:5px}
+input,select,textarea{
+  width:100%;
+  box-sizing:border-box;
+  padding:10px;
+  font-size:15px;
+  border:1px solid #d1d5db;
+  border-radius:10px;
+  margin-top:5px;
+}
 textarea{min-height:70px}
-button{padding:10px 12px;font-size:14px;font-weight:800;border:0;border-radius:10px;margin:4px;cursor:pointer}
+button{
+  padding:10px 12px;
+  font-size:14px;
+  font-weight:800;
+  border:0;
+  border-radius:10px;
+  margin:4px;
+  cursor:pointer;
+}
 button:disabled{opacity:.55;cursor:not-allowed}
-.primary{background:#2563eb;color:#fff}.green{background:#16a34a;color:#fff}.red{background:#dc2626;color:#fff}.gray{background:#e5e7eb;color:#111827}.dark{background:#111827;color:#fff}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.col{flex:1;min-width:180px}
-.msg{font-weight:800;white-space:pre-wrap;margin-top:8px}.ok{color:#166534}.ng{color:#dc2626}.small{font-size:13px;color:#6b7280;line-height:1.6}
+.primary{background:#2563eb;color:#fff}
+.green{background:#16a34a;color:#fff}
+.red{background:#dc2626;color:#fff}
+.gray{background:#e5e7eb;color:#111827}
+.dark{background:#111827;color:#fff}
+.orange{background:#f97316;color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+.col{flex:1;min-width:180px}
+.msg{font-weight:800;white-space:pre-wrap;margin-top:8px}
+.ok{color:#166534}
+.ng{color:#dc2626}
+.small{font-size:13px;color:#6b7280;line-height:1.6}
 table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
-th,td{border:1px solid #e5e7eb;padding:7px;text-align:left;vertical-align:top}th{background:#f9fafb}
-.tabs button{background:#e5e7eb;color:#111827}.tabs button.active{background:#2563eb;color:#fff}.hidden{display:none}
+th,td{border:1px solid #e5e7eb;padding:7px;text-align:left;vertical-align:top}
+th{background:#f9fafb}
+.tabs button{background:#e5e7eb;color:#111827}
+.tabs button.active{background:#2563eb;color:#fff}
+.hidden{display:none}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:800}
+.b-pending{background:#fef3c7;color:#92400e}
+.b-approved{background:#dcfce7;color:#166534}
+.b-rejected{background:#fee2e2;color:#991b1b}
+.b-none{background:#e5e7eb;color:#374151}
 .printArea{background:#fff;padding:16px}
 @media print{
-body{background:#fff}body *{visibility:hidden}
-#printArea,#printArea *{visibility:visible}
-#printArea{position:absolute;left:0;top:0;width:100%}
-.noPrint{display:none!important}
+  body{background:#fff}
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{position:absolute;left:0;top:0;width:100%}
+  .noPrint{display:none!important}
 }
 </style>
 </head>
@@ -39,84 +86,235 @@ body{background:#fff}body *{visibility:hidden}
   <div class="card">
     <h2>管理者情報</h2>
     <div id="adminInfo" class="small">確認中...</div>
+    <div id="loginCheckMsg" class="msg"></div>
     <button class="gray" id="backBtn">ログイン画面へ</button>
     <button class="red" id="logoutBtn">ログアウト</button>
   </div>
 
   <div class="card tabs">
     <button data-tab="workers" class="active">従業員</button>
+    <button data-tab="company">会社設定</button>
     <button data-tab="calendar">会社カレンダー</button>
     <button data-tab="attendance">勤怠確認</button>
     <button data-tab="requests">申請</button>
     <button data-tab="errors">打刻エラー</button>
     <button data-tab="close">締めCSV</button>
+    <button data-tab="logs">履歴</button>
   </div>
 </div>
 
 <section id="tab-workers" class="card">
 <h2>従業員管理</h2>
+
 <div class="row">
-  <div class="col"><label>社員コード</label><input id="wCode" placeholder="例：岸澤 / 001 / A001"></div>
-  <div class="col"><label>氏名</label><input id="wName" placeholder="氏名"></div>
-  <div class="col"><label>個別パスワード</label><input id="wPass" placeholder="例：1234"></div>
-  <div class="col"><label>雇用区分</label><select id="wType"><option>正社員</option><option>パート</option><option>アルバイト</option></select></div>
-  <div class="col"><label>開始時刻</label><input id="wStart" type="time" value="08:00"></div>
-  <div class="col"><label>終了時刻</label><input id="wEnd" type="time" value="17:00"></div>
+  <div class="col">
+    <label>社員コード</label>
+    <input id="wCode" placeholder="例：岸澤 / 001 / A001 / 車両番号">
+  </div>
+  <div class="col">
+    <label>氏名</label>
+    <input id="wName" placeholder="氏名">
+  </div>
+  <div class="col">
+    <label>個別パスワード</label>
+    <input id="wPass" placeholder="例：1234">
+  </div>
+  <div class="col">
+    <label>雇用区分</label>
+    <select id="wType">
+      <option>正社員</option>
+      <option>パート</option>
+      <option>アルバイト</option>
+    </select>
+  </div>
+  <div class="col">
+    <label>開始時刻</label>
+    <input id="wStart" type="time" value="08:00">
+  </div>
+  <div class="col">
+    <label>終了時刻</label>
+    <input id="wEnd" type="time" value="17:00">
+  </div>
 </div>
+
 <button class="primary" id="saveWorkerBtn">従業員を保存</button>
+<button class="gray" id="clearWorkerBtn">入力欄をクリア</button>
 <div id="workerMsg" class="msg"></div>
 <div id="workerList"></div>
 </section>
 
+<section id="tab-company" class="card hidden">
+<h2>会社設定</h2>
+
+<div class="row">
+  <div class="col">
+    <label>会社名</label>
+    <input id="companyNameInput" placeholder="会社名">
+  </div>
+  <div class="col">
+    <label>締め日</label>
+    <select id="closingDayInput">
+      <option value="末日">末日</option>
+      <option value="1">1日</option><option value="2">2日</option><option value="3">3日</option>
+      <option value="4">4日</option><option value="5">5日</option><option value="6">6日</option>
+      <option value="7">7日</option><option value="8">8日</option><option value="9">9日</option>
+      <option value="10">10日</option><option value="11">11日</option><option value="12">12日</option>
+      <option value="13">13日</option><option value="14">14日</option><option value="15">15日</option>
+      <option value="16">16日</option><option value="17">17日</option><option value="18">18日</option>
+      <option value="19">19日</option><option value="20">20日</option><option value="21">21日</option>
+      <option value="22">22日</option><option value="23">23日</option><option value="24">24日</option>
+      <option value="25">25日</option><option value="26">26日</option><option value="27">27日</option>
+      <option value="28">28日</option><option value="29">29日</option><option value="30">30日</option>
+      <option value="31">31日</option>
+    </select>
+  </div>
+  <div class="col">
+    <label>場所違い判定距離（m）</label>
+    <input id="distanceInput" type="number" value="300">
+  </div>
+</div>
+
+<button class="primary" id="saveCompanyBtn">会社設定を保存</button>
+<div id="companyMsg" class="msg"></div>
+</section>
+
 <section id="tab-calendar" class="card hidden">
 <h2>会社カレンダー</h2>
+
 <div class="row">
-  <div class="col"><label>対象月</label><input id="calMonth" type="month"></div>
-  <div class="col"><button class="primary" id="makeWeekdayBtn">平日を出勤日・土日を休日</button></div>
-  <div class="col"><button class="green" id="makeAllWorkBtn">全日出勤日</button></div>
-  <div class="col"><button class="gray" id="makeAllHolidayBtn">全日休日</button></div>
+  <div class="col">
+    <label>対象月</label>
+    <input id="calMonth" type="month">
+  </div>
+  <div class="col">
+    <button class="primary" id="makeWeekdayBtn">平日を出勤日・土日を休日</button>
+  </div>
+  <div class="col">
+    <button class="green" id="makeAllWorkBtn">全日出勤日</button>
+  </div>
+  <div class="col">
+    <button class="gray" id="makeAllHolidayBtn">全日休日</button>
+  </div>
 </div>
+
 <div id="calendarMsg" class="msg"></div>
 <div id="calendarList"></div>
 </section>
 
 <section id="tab-attendance" class="card hidden">
 <h2>勤怠確認・手動編集</h2>
+
 <div class="row">
-  <div class="col"><label>対象月</label><input id="attMonth" type="month"></div>
-  <div class="col"><button class="primary" id="loadAttendanceBtn">読み込み</button></div>
+  <div class="col">
+    <label>対象月</label>
+    <input id="attMonth" type="month">
+  </div>
+  <div class="col">
+    <label>従業員絞り込み</label>
+    <select id="attWorkerFilter">
+      <option value="">全員</option>
+    </select>
+  </div>
+  <div class="col">
+    <button class="primary" id="loadAttendanceBtn">読み込み</button>
+  </div>
+  <div class="col">
+    <button class="orange" id="detectErrorsBtn">未退勤・欠勤などを検知</button>
+  </div>
 </div>
+
+<div id="attendanceMsg" class="msg"></div>
 <div id="attendanceList"></div>
 </section>
 
 <section id="tab-requests" class="card hidden">
 <h2>申請一覧</h2>
+
 <div class="row">
-  <div class="col"><label>対象月</label><input id="reqMonth" type="month"></div>
-  <div class="col"><button class="primary" id="loadRequestsBtn">読み込み</button></div>
+  <div class="col">
+    <label>対象月</label>
+    <input id="reqMonth" type="month">
+  </div>
+  <div class="col">
+    <label>状態</label>
+    <select id="requestStatusFilter">
+      <option value="">全て</option>
+      <option value="pending">確認待ち</option>
+      <option value="approved">承認済み</option>
+      <option value="rejected">否決</option>
+    </select>
+  </div>
+  <div class="col">
+    <button class="primary" id="loadRequestsBtn">読み込み</button>
+  </div>
 </div>
+
 <div id="requestList"></div>
 </section>
 
 <section id="tab-errors" class="card hidden">
 <h2>打刻エラー一覧</h2>
+
 <div class="row">
-  <div class="col"><label>対象月</label><input id="errMonth" type="month"></div>
-  <div class="col"><button class="primary" id="loadErrorsBtn">読み込み</button></div>
+  <div class="col">
+    <label>対象月</label>
+    <input id="errMonth" type="month">
+  </div>
+  <div class="col">
+    <label>状態</label>
+    <select id="errorStatusFilter">
+      <option value="">全て</option>
+      <option value="pending">確認待ち</option>
+      <option value="approved">承認済み</option>
+      <option value="rejected">否決</option>
+    </select>
+  </div>
+  <div class="col">
+    <button class="primary" id="loadErrorsBtn">読み込み</button>
+  </div>
 </div>
+
 <div id="errorList"></div>
 </section>
 
 <section id="tab-close" class="card hidden">
 <h2>締めてCSV出力</h2>
+
 <div class="row">
-  <div class="col"><label>対象月</label><input id="closeMonth" type="month"></div>
-  <div class="col"><label>期間開始</label><input id="periodStart" type="date"></div>
-  <div class="col"><label>期間終了</label><input id="periodEnd" type="date"></div>
+  <div class="col">
+    <label>対象月</label>
+    <input id="closeMonth" type="month">
+  </div>
+  <div class="col">
+    <label>期間開始</label>
+    <input id="periodStart" type="date">
+  </div>
+  <div class="col">
+    <label>期間終了</label>
+    <input id="periodEnd" type="date">
+  </div>
 </div>
+
 <button class="red" id="closeBtn">締めてCSV出力</button>
 <button class="gray" id="printBtn">印刷用明細を印刷 / PDF保存</button>
+
+<div class="small">
+この期間の勤怠を締めてCSVを出力します。CSV出力後、この期間の勤怠データは削除されます。CSVファイルと印刷用明細は必ず保管してください。
+</div>
+
 <div id="closeMsg" class="msg"></div>
+</section>
+
+<section id="tab-logs" class="card hidden">
+<h2>履歴</h2>
+
+<div class="row">
+  <div class="col">
+    <button class="primary" id="loadLogsBtn">履歴を読み込み</button>
+  </div>
+</div>
+
+<div id="logsList"></div>
 </section>
 
 <section id="printArea" class="printArea hidden"></section>
@@ -154,34 +352,36 @@ function pad(n){return String(n).padStart(2,"0")}
 function now(){return Date.now()}
 function ymFromMonth(v){return String(v||"").replace("-","")}
 function todayMonth(){const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}`}
+function todayKey(){const d=new Date();return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`}
 function keyFromDateText(d){return String(d||"").replaceAll("-","")}
 function ymdTextFromKey(k){return `${k.slice(0,4)}-${k.slice(4,6)}-${k.slice(6,8)}`}
 function minutesText(min){min=Number(min||0);return `${Math.floor(min/60)}:${pad(min%60)}`}
 function setMsg(id,text,isError=false){const el=$(id);el.textContent=text;el.className="msg "+(isError?"ng":"ok")}
+function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
 
 async function getJson(path){
   const res=await fetch(`${DB_URL}/${path}.json`);
-  if(!res.ok) throw new Error("読み込みに失敗しました");
+  if(!res.ok) throw new Error(`読み込みに失敗しました: ${res.status}`);
   return await res.json();
 }
 async function putJson(path,data){
   const res=await fetch(`${DB_URL}/${path}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
-  if(!res.ok) throw new Error("保存に失敗しました");
+  if(!res.ok) throw new Error(`保存に失敗しました: ${res.status}`);
   return await res.json();
 }
 async function patchJson(path,data){
   const res=await fetch(`${DB_URL}/${path}.json`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
-  if(!res.ok) throw new Error("保存に失敗しました");
+  if(!res.ok) throw new Error(`保存に失敗しました: ${res.status}`);
   return await res.json();
 }
 async function deleteJson(path){
   const res=await fetch(`${DB_URL}/${path}.json`,{method:"DELETE"});
-  if(!res.ok) throw new Error("削除に失敗しました");
+  if(!res.ok) throw new Error(`削除に失敗しました: ${res.status}`);
   return await res.json();
 }
 async function postJson(path,data){
   const res=await fetch(`${DB_URL}/${path}.json`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
-  if(!res.ok) throw new Error("保存に失敗しました");
+  if(!res.ok) throw new Error(`保存に失敗しました: ${res.status}`);
   return await res.json();
 }
 
@@ -193,16 +393,41 @@ function getQueryCompany(){
 function switchTab(tab){
   document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
   document.querySelector(`.tabs button[data-tab="${tab}"]`).classList.add("active");
-  ["workers","calendar","attendance","requests","errors","close"].forEach(t=>{
+  ["workers","company","calendar","attendance","requests","errors","close","logs"].forEach(t=>{
     $(`tab-${t}`).classList.toggle("hidden",t!==tab);
   });
 }
 
+function statusText(s){
+  return s==="approved"?"承認済み":s==="rejected"?"否決":"確認待ち";
+}
+function statusBadge(s){
+  const cls=s==="approved"?"b-approved":s==="rejected"?"b-rejected":s==="pending"?"b-pending":"b-none";
+  return `<span class="badge ${cls}">${statusText(s)}</span>`;
+}
+function requestTypeText(t){
+  return {early_work:"早出申請",overtime:"残業申請",holiday_work:"休日出勤申請",clock_fix:"打刻修正申請"}[t]||t;
+}
+function errorTypeText(t){
+  return {
+    out_without_in:"出勤なし退勤",
+    missing_out_next_day:"退勤なし翌日",
+    double_in:"二重出勤",
+    long_working:"長時間未退勤",
+    location_difference:"場所違い",
+    late:"遅刻候補",
+    early_leave:"早退候補",
+    absence:"欠勤候補"
+  }[t]||t;
+}
+
 async function requireAdmin(){
   companyCode=getQueryCompany();
+  setMsg("loginCheckMsg","管理者ログイン状態を確認中...");
 
   onAuthStateChanged(auth,async user=>{
     if(!user){
+      setMsg("loginCheckMsg","管理者ログインが必要です。",true);
       alert("管理者ログインが必要です。");
       location.href="index.html";
       return;
@@ -214,6 +439,7 @@ async function requireAdmin(){
       const allowed=await getJson(`companies/${companyCode}/admins/${user.uid}`);
 
       if(allowed!==true){
+        setMsg("loginCheckMsg",`この会社の管理者として登録されていません。\n会社コード：${companyCode}\nUID：${user.uid}`,true);
         alert("この会社の管理者として登録されていません。");
         await signOut(auth);
         location.href="index.html";
@@ -224,23 +450,74 @@ async function requireAdmin(){
       companyInfo=await getJson(`companies/${companyCode}/companyInfo`) || {};
 
       $("adminInfo").innerHTML=`
-        会社コード：${companyCode}<br>
-        会社名：${companyInfo.companyName||""}<br>
-        管理者：${user.email||user.uid}
+        会社コード：${escapeHtml(companyCode)}<br>
+        会社名：${escapeHtml(companyInfo.companyName||"")}<br>
+        管理者：${escapeHtml(user.email||user.uid)}<br>
+        UID：${escapeHtml(user.uid)}
       `;
+      setMsg("loginCheckMsg","管理者確認OK。");
 
+      await loadCompanySettings();
       await loadWorkers();
 
     }catch(e){
-      alert("管理者確認に失敗しました。Rulesまたは会社コードを確認してください。");
-      location.href="index.html";
+      setMsg("loginCheckMsg",`管理者確認に失敗しました。\n${e.message}\n会社コード・UID・Rulesを確認してください。`,true);
     }
   });
+}
+
+async function loadCompanySettings(){
+  companyInfo=await getJson(`companies/${companyCode}/companyInfo`) || {};
+  const distance=await getJson(`companies/${companyCode}/settings/locationCheck/distanceThresholdMeters`);
+
+  $("companyNameInput").value=companyInfo.companyName||"";
+  $("closingDayInput").value=companyInfo.closingDay||"末日";
+  $("distanceInput").value=distance||300;
+}
+
+async function saveCompanySettings(){
+  try{
+    const companyName=$("companyNameInput").value.trim();
+    const closingDay=$("closingDayInput").value;
+    const distance=Number($("distanceInput").value||300);
+
+    await patchJson(`companies/${companyCode}/companyInfo`,{
+      companyCode,
+      companyName,
+      closingDay,
+      active:true,
+      updatedAt:now()
+    });
+
+    await patchJson(`companies/${companyCode}/settings/locationCheck`,{
+      enabled:true,
+      distanceThresholdMeters:distance
+    });
+
+    companyInfo=await getJson(`companies/${companyCode}/companyInfo`) || {};
+    setMsg("companyMsg","会社設定を保存しました。");
+  }catch(e){
+    setMsg("companyMsg",e.message,true);
+  }
 }
 
 async function loadWorkers(){
   workers=await getJson(`companies/${companyCode}/workers`) || {};
   renderWorkers();
+  refreshWorkerFilters();
+}
+
+function refreshWorkerFilters(){
+  const sel=$("attWorkerFilter");
+  const current=sel.value;
+  sel.innerHTML=`<option value="">全員</option>`;
+  Object.entries(workers||{}).forEach(([id,w])=>{
+    const opt=document.createElement("option");
+    opt.value=id;
+    opt.textContent=`${w.name||id}（${w.code||id}）`;
+    sel.appendChild(opt);
+  });
+  sel.value=current;
 }
 
 function renderWorkers(){
@@ -251,20 +528,25 @@ function renderWorkers(){
   }
 
   let html=`<table><thead><tr>
-  <th>社員コード</th><th>氏名</th><th>個別パスワード</th><th>区分</th><th>勤務時間</th><th>状態</th><th>操作</th>
+  <th>社員コード</th><th>氏名</th><th>個別パスワード</th><th>区分</th><th>勤務時間</th><th>通常場所</th><th>前回場所</th><th>状態</th><th>操作</th>
   </tr></thead><tbody>`;
 
   for(const [id,w] of entries){
+    const usual=w.usualLocation&&w.usualLocation.lat?`<a target="_blank" href="https://www.google.com/maps?q=${w.usualLocation.lat},${w.usualLocation.lng}">確認</a>`:"未設定";
+    const last=w.lastClockGps&&w.lastClockGps.lat?`<a target="_blank" href="https://www.google.com/maps?q=${w.lastClockGps.lat},${w.lastClockGps.lng}">確認</a>`:"なし";
     html+=`<tr>
-      <td>${w.code||id}</td>
-      <td>${w.name||""}</td>
-      <td>${w.loginPasscode||""}</td>
-      <td>${w.employmentType||""}</td>
-      <td>${w.workStart||""}〜${w.workEnd||""}</td>
+      <td>${escapeHtml(w.code||id)}</td>
+      <td>${escapeHtml(w.name||"")}</td>
+      <td>${escapeHtml(w.loginPasscode||"")}</td>
+      <td>${escapeHtml(w.employmentType||"")}</td>
+      <td>${escapeHtml(w.workStart||"")}〜${escapeHtml(w.workEnd||"")}</td>
+      <td>${usual}</td>
+      <td>${last}</td>
       <td>${w.active===false?"停止":"有効"}</td>
       <td>
         <button class="gray" onclick="editWorker('${id}')">編集</button>
         <button class="${w.active===false?"green":"red"}" onclick="toggleWorker('${id}')">${w.active===false?"有効化":"停止"}</button>
+        <button class="orange" onclick="setUsualFromLast('${id}')">前回場所を通常場所にする</button>
       </td>
     </tr>`;
   }
@@ -293,6 +575,23 @@ window.toggleWorker=async function(id){
   await loadWorkers();
 };
 
+window.setUsualFromLast=async function(id){
+  const w=workers[id];
+  if(!w.lastClockGps||!w.lastClockGps.lat){
+    alert("前回打刻場所がありません。");
+    return;
+  }
+  await patchJson(`companies/${companyCode}/workers/${id}`,{
+    usualLocation:{
+      lat:w.lastClockGps.lat,
+      lng:w.lastClockGps.lng,
+      updatedAt:now()
+    },
+    updatedAt:now()
+  });
+  await loadWorkers();
+};
+
 async function saveWorker(){
   const code=sanitizeKey($("wCode").value);
   const name=$("wName").value.trim();
@@ -303,29 +602,42 @@ async function saveWorker(){
     return;
   }
 
-  const existing=await getJson(`companies/${companyCode}/workers/${code}`);
+  try{
+    const existing=await getJson(`companies/${companyCode}/workers/${code}`);
 
-  const data={
-    code,
-    name,
-    loginPasscode:pass,
-    employmentType:$("wType").value,
-    active:true,
-    workStart:$("wStart").value||"08:00",
-    workEnd:$("wEnd").value||"17:00",
-    usualLocation:existing?.usualLocation || {lat:null,lng:null,updatedAt:0},
-    lastClockGps:existing?.lastClockGps || {lat:null,lng:null,updatedAt:0},
-    createdAt:existing?.createdAt || now(),
-    updatedAt:now()
-  };
+    const data={
+      code,
+      name,
+      loginPasscode:pass,
+      employmentType:$("wType").value,
+      active:true,
+      workStart:$("wStart").value||"08:00",
+      workEnd:$("wEnd").value||"17:00",
+      usualLocation:existing?.usualLocation || {lat:null,lng:null,updatedAt:0},
+      lastClockGps:existing?.lastClockGps || {lat:null,lng:null,updatedAt:0},
+      createdAt:existing?.createdAt || now(),
+      updatedAt:now()
+    };
 
-  await putJson(`companies/${companyCode}/workers/${code}`,data);
+    await putJson(`companies/${companyCode}/workers/${code}`,data);
 
+    $("wCode").value="";
+    $("wName").value="";
+    $("wPass").value="";
+    setMsg("workerMsg","従業員を保存しました。");
+    await loadWorkers();
+  }catch(e){
+    setMsg("workerMsg",e.message,true);
+  }
+}
+
+function clearWorkerForm(){
   $("wCode").value="";
   $("wName").value="";
   $("wPass").value="";
-  setMsg("workerMsg","従業員を保存しました。");
-  await loadWorkers();
+  $("wType").value="正社員";
+  $("wStart").value="08:00";
+  $("wEnd").value="17:00";
 }
 
 function daysInMonth(monthValue){
@@ -347,26 +659,30 @@ async function makeCalendar(mode){
     return;
   }
 
-  const total=daysInMonth(month);
-  const yyyyMM=ymFromMonth(month);
-  const updates={};
+  try{
+    const total=daysInMonth(month);
+    const yyyyMM=ymFromMonth(month);
+    const updates={};
 
-  for(let d=1;d<=total;d++){
-    const key=dateKey(month,d);
-    const iso=dateIso(month,d);
-    const day=new Date(iso).getDay();
-    let dayType="workday";
+    for(let d=1;d<=total;d++){
+      const key=dateKey(month,d);
+      const iso=dateIso(month,d);
+      const day=new Date(iso).getDay();
+      let dayType="workday";
 
-    if(mode==="weekday") dayType=(day===0||day===6)?"holiday":"workday";
-    if(mode==="allWork") dayType="workday";
-    if(mode==="allHoliday") dayType="holiday";
+      if(mode==="weekday") dayType=(day===0||day===6)?"holiday":"workday";
+      if(mode==="allWork") dayType="workday";
+      if(mode==="allHoliday") dayType="holiday";
 
-    updates[key]={date:iso,dayType,note:"",updatedAt:now(),updatedBy:currentUser.uid};
+      updates[key]={date:iso,dayType,note:"",updatedAt:now(),updatedBy:currentUser.uid};
+    }
+
+    await putJson(`companies/${companyCode}/calendar/${yyyyMM}`,updates);
+    setMsg("calendarMsg","会社カレンダーを作成しました。");
+    await loadCalendar();
+  }catch(e){
+    setMsg("calendarMsg",e.message,true);
   }
-
-  await putJson(`companies/${companyCode}/calendar/${yyyyMM}`,updates);
-  setMsg("calendarMsg","会社カレンダーを作成しました。");
-  await loadCalendar();
 }
 
 async function loadCalendar(){
@@ -376,17 +692,19 @@ async function loadCalendar(){
   const yyyyMM=ymFromMonth(month);
   const data=await getJson(`companies/${companyCode}/calendar/${yyyyMM}`) || {};
 
-  let html=`<table><thead><tr><th>日付</th><th>区分</th><th>メモ</th><th>保存</th></tr></thead><tbody>`;
+  let html=`<table><thead><tr><th>日付</th><th>曜日</th><th>区分</th><th>メモ</th><th>保存</th></tr></thead><tbody>`;
 
   Object.entries(data).sort().forEach(([key,c])=>{
+    const dayName=["日","月","火","水","木","金","土"][new Date(c.date).getDay()];
     html+=`<tr>
-      <td>${c.date}</td>
+      <td>${escapeHtml(c.date)}</td>
+      <td>${dayName}</td>
       <td><select id="dayType_${key}">
         <option value="workday" ${c.dayType==="workday"?"selected":""}>出勤日</option>
         <option value="holiday" ${c.dayType==="holiday"?"selected":""}>休日</option>
         <option value="closed" ${c.dayType==="closed"?"selected":""}>会社休業日</option>
       </select></td>
-      <td><input id="note_${key}" value="${c.note||""}"></td>
+      <td><input id="note_${key}" value="${escapeHtml(c.note||"")}"></td>
       <td><button class="primary" onclick="saveCalendarDay('${yyyyMM}','${key}')">保存</button></td>
     </tr>`;
   });
@@ -412,151 +730,366 @@ function calcWorkMinutes(inTime,outTime,breakMinutes){
   return Math.max(0,(oh*60+om)-(ih*60+im)-Number(breakMinutes||0));
 }
 
+function calcBreakMinutesByRule(inTime,outTime){
+  if(!inTime||!outTime) return 0;
+  const [ih,im]=inTime.split(":").map(Number);
+  const [oh,om]=outTime.split(":").map(Number);
+  const total=(oh*60+om)-(ih*60+im);
+  if(total>480) return 60;
+  if(total>360) return 45;
+  return 0;
+}
+
 async function loadAttendance(){
-  const yyyyMM=ymFromMonth($("attMonth").value);
-  const data=await getJson(`companies/${companyCode}/attendance/${yyyyMM}`) || {};
+  try{
+    const yyyyMM=ymFromMonth($("attMonth").value);
+    const filterWorker=$("attWorkerFilter").value;
+    const data=await getJson(`companies/${companyCode}/attendance/${yyyyMM}`) || {};
 
-  let html=`<table><thead><tr>
-  <th>日付</th><th>社員</th><th>出勤</th><th>退勤</th><th>休憩</th><th>実働</th><th>場所</th><th>場所確認</th><th>備考</th><th>操作</th>
-  </tr></thead><tbody>`;
+    let html=`<table><thead><tr>
+    <th>日付</th><th>社員</th><th>出勤</th><th>退勤</th><th>休憩</th><th>実働</th><th>場所</th><th>場所確認</th><th>遅刻</th><th>早退</th><th>欠勤</th><th>備考</th><th>操作</th>
+    </tr></thead><tbody>`;
 
-  for(const [workerId,days] of Object.entries(data)){
-    for(const [dateKey,row] of Object.entries(days||{})){
-      const mapIn=row.inGps?`<a target="_blank" href="https://www.google.com/maps?q=${row.inGps.lat},${row.inGps.lng}">出勤GPS</a>`:"";
-      const mapOut=row.outGps?`<a target="_blank" href="https://www.google.com/maps?q=${row.outGps.lat},${row.outGps.lng}">退勤GPS</a>`:"";
+    let count=0;
 
-      html+=`<tr>
-        <td>${row.date||ymdTextFromKey(dateKey)}</td>
-        <td>${row.workerName||workerId}<br>${row.workerCode||""}</td>
-        <td><input id="in_${workerId}_${dateKey}" type="time" value="${row.inTime||""}"></td>
-        <td><input id="out_${workerId}_${dateKey}" type="time" value="${row.outTime||""}"></td>
-        <td><input id="br_${workerId}_${dateKey}" type="number" value="${row.breakMinutes||0}"></td>
-        <td>${minutesText(row.workMinutes||0)}</td>
-        <td>${mapIn}<br>${mapOut}</td>
-        <td>
-          <select id="loc_${workerId}_${dateKey}">
-            <option value="none" ${!row.locationApproval||row.locationApproval==="none"?"selected":""}>なし</option>
-            <option value="pending" ${row.locationApproval==="pending"?"selected":""}>確認待ち</option>
-            <option value="approved" ${row.locationApproval==="approved"?"selected":""}>承認</option>
-            <option value="rejected" ${row.locationApproval==="rejected"?"selected":""}>否決</option>
-          </select>
-        </td>
-        <td><input id="notea_${workerId}_${dateKey}" value="${row.note||""}"></td>
-        <td><button class="primary" onclick="saveAttendanceEdit('${yyyyMM}','${workerId}','${dateKey}')">保存</button></td>
-      </tr>`;
+    for(const [workerId,days] of Object.entries(data)){
+      if(filterWorker&&filterWorker!==workerId) continue;
+
+      for(const [dateKey,row] of Object.entries(days||{})){
+        count++;
+        const mapIn=row.inGps?`<a target="_blank" href="https://www.google.com/maps?q=${row.inGps.lat},${row.inGps.lng}">出勤GPS</a>`:"";
+        const mapOut=row.outGps?`<a target="_blank" href="https://www.google.com/maps?q=${row.outGps.lat},${row.outGps.lng}">退勤GPS</a>`:"";
+
+        html+=`<tr>
+          <td>${escapeHtml(row.date||ymdTextFromKey(dateKey))}</td>
+          <td>${escapeHtml(row.workerName||workerId)}<br>${escapeHtml(row.workerCode||"")}</td>
+          <td><input id="in_${workerId}_${dateKey}" type="time" value="${escapeHtml(row.inTime||"")}"></td>
+          <td><input id="out_${workerId}_${dateKey}" type="time" value="${escapeHtml(row.outTime||"")}"></td>
+          <td><input id="br_${workerId}_${dateKey}" type="number" value="${row.breakMinutes||0}"></td>
+          <td>${minutesText(row.workMinutes||0)}</td>
+          <td>${mapIn}<br>${mapOut}</td>
+          <td>
+            <select id="loc_${workerId}_${dateKey}">
+              <option value="none" ${!row.locationApproval||row.locationApproval==="none"?"selected":""}>なし</option>
+              <option value="pending" ${row.locationApproval==="pending"?"selected":""}>確認待ち</option>
+              <option value="approved" ${row.locationApproval==="approved"?"selected":""}>承認</option>
+              <option value="rejected" ${row.locationApproval==="rejected"?"selected":""}>否決</option>
+            </select>
+          </td>
+          <td><input id="late_${workerId}_${dateKey}" type="checkbox" ${row.late?"checked":""}></td>
+          <td><input id="early_${workerId}_${dateKey}" type="checkbox" ${row.earlyLeave?"checked":""}></td>
+          <td><input id="abs_${workerId}_${dateKey}" type="checkbox" ${row.absence?"checked":""}></td>
+          <td><input id="notea_${workerId}_${dateKey}" value="${escapeHtml(row.note||"")}"></td>
+          <td><button class="primary" onclick="saveAttendanceEdit('${yyyyMM}','${workerId}','${dateKey}')">保存</button></td>
+        </tr>`;
+      }
     }
-  }
 
-  html+=`</tbody></table>`;
-  $("attendanceList").innerHTML=html;
+    html+=`</tbody></table>`;
+    $("attendanceList").innerHTML=count?html:`<p class="small">勤怠データがありません。</p>`;
+    setMsg("attendanceMsg",`${count}件読み込みました。`);
+  }catch(e){
+    setMsg("attendanceMsg",e.message,true);
+  }
 }
 
 window.saveAttendanceEdit=async function(yyyyMM,workerId,dateKey){
-  const path=`companies/${companyCode}/attendance/${yyyyMM}/${workerId}/${dateKey}`;
-  const before=await getJson(path);
+  try{
+    const path=`companies/${companyCode}/attendance/${yyyyMM}/${workerId}/${dateKey}`;
+    const before=await getJson(path);
 
-  const inTime=$(`in_${workerId}_${dateKey}`).value;
-  const outTime=$(`out_${workerId}_${dateKey}`).value;
-  const breakMinutes=Number($(`br_${workerId}_${dateKey}`).value||0);
-  const note=$(`notea_${workerId}_${dateKey}`).value;
-  const locationApproval=$(`loc_${workerId}_${dateKey}`).value;
-  const workMinutes=calcWorkMinutes(inTime,outTime,breakMinutes);
+    const inTime=$(`in_${workerId}_${dateKey}`).value;
+    const outTime=$(`out_${workerId}_${dateKey}`).value;
+    const breakMinutes=Number($(`br_${workerId}_${dateKey}`).value||0);
+    const note=$(`notea_${workerId}_${dateKey}`).value;
+    const locationApproval=$(`loc_${workerId}_${dateKey}`).value;
+    const late=$(`late_${workerId}_${dateKey}`).checked;
+    const earlyLeave=$(`early_${workerId}_${dateKey}`).checked;
+    const absence=$(`abs_${workerId}_${dateKey}`).checked;
+    const workMinutes=calcWorkMinutes(inTime,outTime,breakMinutes);
 
-  const after={inTime,outTime,breakMinutes,workMinutes,note,locationApproval,updatedAt:now()};
+    const after={inTime,outTime,breakMinutes,workMinutes,note,locationApproval,late,earlyLeave,absence,updatedAt:now()};
 
-  await patchJson(path,after);
-  await postJson(`companies/${companyCode}/logs/edits`,{
-    targetPath:path,before,after,editedBy:currentUser.uid,editedAt:now(),reason:"管理者による勤怠手動編集"
-  });
+    await patchJson(path,after);
+    await postJson(`companies/${companyCode}/logs/edits`,{
+      targetPath:path,
+      before,
+      after,
+      editedBy:currentUser.uid,
+      editedAt:now(),
+      reason:"管理者による勤怠手動編集"
+    });
 
-  alert("保存しました。");
-  await loadAttendance();
+    alert("保存しました。");
+    await loadAttendance();
+  }catch(e){
+    alert(e.message);
+  }
 };
 
-function requestTypeText(t){
-  return {early_work:"早出申請",overtime:"残業申請",holiday_work:"休日出勤申請",clock_fix:"打刻修正申請"}[t]||t;
+async function createError(yyyyMM,error){
+  const result=await postJson(`companies/${companyCode}/errors/${yyyyMM}`,error);
+  if(result&&result.name){
+    await patchJson(`companies/${companyCode}/errors/${yyyyMM}/${result.name}`,{errorId:result.name});
+  }
 }
-function statusText(s){return s==="approved"?"承認済み":s==="rejected"?"否決":"確認待ち"}
+
+async function detectAttendanceErrors(){
+  try{
+    const month=$("attMonth").value;
+    const yyyyMM=ymFromMonth(month);
+    if(!yyyyMM){
+      setMsg("attendanceMsg","対象月を選んでください。",true);
+      return;
+    }
+
+    const calendar=await getJson(`companies/${companyCode}/calendar/${yyyyMM}`) || {};
+    const attendance=await getJson(`companies/${companyCode}/attendance/${yyyyMM}`) || {};
+    const existingErrors=await getJson(`companies/${companyCode}/errors/${yyyyMM}`) || {};
+    const existingKeys=new Set(Object.values(existingErrors).map(e=>`${e.type}_${e.workerId}_${keyFromDateText(e.date||"")}`));
+
+    let created=0;
+    const today=todayKey();
+
+    for(const [dateKey,cal] of Object.entries(calendar)){
+      if(dateKey>today) continue;
+
+      for(const [workerId,w] of Object.entries(workers||{})){
+        if(w.active===false) continue;
+        const row=attendance?.[workerId]?.[dateKey] || null;
+
+        if(cal.dayType==="workday"){
+          if(!row || !row.inTime){
+            const unique=`absence_${workerId}_${dateKey}`;
+            if(!existingKeys.has(unique)){
+              await createError(yyyyMM,{
+                workerId,
+                workerCode:w.code||workerId,
+                workerName:w.name||workerId,
+                date:cal.date||ymdTextFromKey(dateKey),
+                type:"absence",
+                title:"欠勤候補",
+                message:"出勤日に出勤打刻がありません。",
+                gps:null,
+                status:"pending",
+                adminComment:"",
+                createdAt:now(),
+                updatedAt:now(),
+                approvedBy:"",
+                approvedAt:0
+              });
+              created++;
+            }
+          }
+
+          if(row&&row.inTime&&!row.outTime&&dateKey<today){
+            const unique=`missing_out_next_day_${workerId}_${dateKey}`;
+            if(!existingKeys.has(unique)){
+              await createError(yyyyMM,{
+                workerId,
+                workerCode:w.code||workerId,
+                workerName:w.name||workerId,
+                date:row.date||ymdTextFromKey(dateKey),
+                type:"missing_out_next_day",
+                title:"退勤なし翌日",
+                message:"出勤打刻がありますが、翌日になっても退勤打刻がありません。",
+                gps:null,
+                status:"pending",
+                adminComment:"",
+                createdAt:now(),
+                updatedAt:now(),
+                approvedBy:"",
+                approvedAt:0
+              });
+              created++;
+            }
+          }
+        }
+
+        if(row&&row.inTime&&!row.outTime&&dateKey===today){
+          const [ih,im]=row.inTime.split(":").map(Number);
+          const startMin=ih*60+im;
+          const d=new Date();
+          const nowMin=d.getHours()*60+d.getMinutes();
+          if(nowMin-startMin>12*60){
+            const unique=`long_working_${workerId}_${dateKey}`;
+            if(!existingKeys.has(unique)){
+              await createError(yyyyMM,{
+                workerId,
+                workerCode:w.code||workerId,
+                workerName:w.name||workerId,
+                date:row.date||ymdTextFromKey(dateKey),
+                type:"long_working",
+                title:"長時間未退勤",
+                message:"出勤から12時間以上経過していますが、退勤打刻がありません。",
+                gps:null,
+                status:"pending",
+                adminComment:"",
+                createdAt:now(),
+                updatedAt:now(),
+                approvedBy:"",
+                approvedAt:0
+              });
+              created++;
+            }
+          }
+        }
+      }
+    }
+
+    setMsg("attendanceMsg",`検知完了：${created}件のエラー候補を作成しました。`);
+  }catch(e){
+    setMsg("attendanceMsg",e.message,true);
+  }
+}
 
 async function loadRequests(){
-  const yyyyMM=ymFromMonth($("reqMonth").value);
-  const data=await getJson(`companies/${companyCode}/requests/${yyyyMM}`) || {};
+  try{
+    const yyyyMM=ymFromMonth($("reqMonth").value);
+    const filter=$("requestStatusFilter").value;
+    const data=await getJson(`companies/${companyCode}/requests/${yyyyMM}`) || {};
 
-  let html=`<table><thead><tr><th>日付</th><th>社員</th><th>種別</th><th>時間</th><th>理由</th><th>状態</th><th>操作</th></tr></thead><tbody>`;
+    let html=`<table><thead><tr><th>日付</th><th>社員</th><th>種別</th><th>時間</th><th>理由</th><th>状態</th><th>操作</th></tr></thead><tbody>`;
+    let count=0;
 
-  for(const [id,r] of Object.entries(data)){
-    html+=`<tr>
-      <td>${r.date||""}</td>
-      <td>${r.workerName||""}<br>${r.workerCode||""}</td>
-      <td>${requestTypeText(r.type)}</td>
-      <td>${r.startTime||""}〜${r.endTime||""}</td>
-      <td>${r.reason||""}</td>
-      <td>${statusText(r.status)}</td>
-      <td>
-        <button class="green" onclick="judgeRequest('${yyyyMM}','${id}','approved')">承認</button>
-        <button class="red" onclick="judgeRequest('${yyyyMM}','${id}','rejected')">否決</button>
-      </td>
-    </tr>`;
+    for(const [id,r] of Object.entries(data)){
+      if(filter&&r.status!==filter) continue;
+      count++;
+      html+=`<tr>
+        <td>${escapeHtml(r.date||"")}</td>
+        <td>${escapeHtml(r.workerName||"")}<br>${escapeHtml(r.workerCode||"")}</td>
+        <td>${escapeHtml(requestTypeText(r.type))}</td>
+        <td>${escapeHtml(r.startTime||"")}〜${escapeHtml(r.endTime||"")}</td>
+        <td>${escapeHtml(r.reason||"")}</td>
+        <td>${statusBadge(r.status)}</td>
+        <td>
+          <button class="green" onclick="judgeRequest('${yyyyMM}','${id}','approved')">承認</button>
+          <button class="red" onclick="judgeRequest('${yyyyMM}','${id}','rejected')">否決</button>
+        </td>
+      </tr>`;
+    }
+
+    html+=`</tbody></table>`;
+    $("requestList").innerHTML=count?html:`<p class="small">申請はありません。</p>`;
+  }catch(e){
+    $("requestList").innerHTML=`<p class="ng">${escapeHtml(e.message)}</p>`;
   }
+}
 
-  html+=`</tbody></table>`;
-  $("requestList").innerHTML=html;
+function requestMinutes(r){
+  if(!r.startTime||!r.endTime) return 0;
+  const [sh,sm]=r.startTime.split(":").map(Number);
+  const [eh,em]=r.endTime.split(":").map(Number);
+  return Math.max(0,(eh*60+em)-(sh*60+sm));
 }
 
 window.judgeRequest=async function(yyyyMM,id,status){
-  await patchJson(`companies/${companyCode}/requests/${yyyyMM}/${id}`,{
-    status,approvedBy:currentUser.uid,approvedAt:now(),updatedAt:now()
-  });
-  await loadRequests();
+  try{
+    const r=await getJson(`companies/${companyCode}/requests/${yyyyMM}/${id}`);
+    await patchJson(`companies/${companyCode}/requests/${yyyyMM}/${id}`,{
+      status,
+      approvedBy:currentUser.uid,
+      approvedAt:now(),
+      updatedAt:now()
+    });
+
+    if(status==="approved"&&r&&r.workerId&&r.date){
+      const dateKey=keyFromDateText(r.date);
+      const path=`companies/${companyCode}/attendance/${yyyyMM}/${r.workerId}/${dateKey}`;
+      const row=await getJson(path) || {};
+      const min=requestMinutes(r);
+      const patch={updatedAt:now()};
+
+      if(r.type==="early_work") patch.earlyWorkMinutes=Number(row.earlyWorkMinutes||0)+min;
+      if(r.type==="overtime") patch.overtimeMinutes=Number(row.overtimeMinutes||0)+min;
+      if(r.type==="holiday_work") patch.holidayWorkMinutes=Number(row.holidayWorkMinutes||0)+min;
+      if(r.type==="clock_fix") patch.approvalStatus="approved";
+
+      if(Object.keys(patch).length>1){
+        await patchJson(path,patch);
+      }
+    }
+
+    await loadRequests();
+  }catch(e){
+    alert(e.message);
+  }
 };
 
 async function loadErrors(){
-  const yyyyMM=ymFromMonth($("errMonth").value);
-  const data=await getJson(`companies/${companyCode}/errors/${yyyyMM}`) || {};
+  try{
+    const yyyyMM=ymFromMonth($("errMonth").value);
+    const filter=$("errorStatusFilter").value;
+    const data=await getJson(`companies/${companyCode}/errors/${yyyyMM}`) || {};
 
-  let html=`<table><thead><tr><th>日付</th><th>社員</th><th>内容</th><th>場所</th><th>状態</th><th>操作</th></tr></thead><tbody>`;
+    let html=`<table><thead><tr><th>日付</th><th>社員</th><th>種別</th><th>内容</th><th>場所</th><th>状態</th><th>操作</th></tr></thead><tbody>`;
+    let count=0;
 
-  for(const [id,e] of Object.entries(data)){
-    const map=e.gps?`<a target="_blank" href="https://www.google.com/maps?q=${e.gps.lat},${e.gps.lng}">地図で確認</a>`:"";
-    html+=`<tr>
-      <td>${e.date||""}</td>
-      <td>${e.workerName||""}<br>${e.workerCode||""}</td>
-      <td><b>${e.title||e.type}</b><br>${e.message||""}</td>
-      <td>${map}</td>
-      <td>${statusText(e.status)}</td>
-      <td>
-        <button class="green" onclick="judgeError('${yyyyMM}','${id}','approved')">承認</button>
-        <button class="red" onclick="judgeError('${yyyyMM}','${id}','rejected')">否決</button>
-      </td>
-    </tr>`;
+    for(const [id,e] of Object.entries(data)){
+      if(filter&&e.status!==filter) continue;
+      count++;
+      const map=e.gps?`<a target="_blank" href="https://www.google.com/maps?q=${e.gps.lat},${e.gps.lng}">地図で確認</a>`:"";
+      html+=`<tr>
+        <td>${escapeHtml(e.date||"")}</td>
+        <td>${escapeHtml(e.workerName||"")}<br>${escapeHtml(e.workerCode||"")}</td>
+        <td>${escapeHtml(errorTypeText(e.type))}</td>
+        <td><b>${escapeHtml(e.title||e.type)}</b><br>${escapeHtml(e.message||"")}</td>
+        <td>${map}</td>
+        <td>${statusBadge(e.status)}</td>
+        <td>
+          <button class="green" onclick="judgeError('${yyyyMM}','${id}','approved')">承認</button>
+          <button class="red" onclick="judgeError('${yyyyMM}','${id}','rejected')">否決</button>
+        </td>
+      </tr>`;
+    }
+
+    html+=`</tbody></table>`;
+    $("errorList").innerHTML=count?html:`<p class="small">打刻エラーはありません。</p>`;
+  }catch(e){
+    $("errorList").innerHTML=`<p class="ng">${escapeHtml(e.message)}</p>`;
   }
-
-  html+=`</tbody></table>`;
-  $("errorList").innerHTML=html;
 }
 
 window.judgeError=async function(yyyyMM,id,status){
-  const e=await getJson(`companies/${companyCode}/errors/${yyyyMM}/${id}`);
-  await patchJson(`companies/${companyCode}/errors/${yyyyMM}/${id}`,{
-    status,approvedBy:currentUser.uid,approvedAt:now(),updatedAt:now()
-  });
+  try{
+    const e=await getJson(`companies/${companyCode}/errors/${yyyyMM}/${id}`);
 
-  if(e&&e.workerId&&e.date){
-    const dateKey=keyFromDateText(e.date);
-    const patch={};
-    if(e.type==="location_difference") patch.locationApproval=status;
-    if(e.type==="late") patch.late=status==="approved";
-    if(e.type==="early_leave") patch.earlyLeave=status==="approved";
-    if(Object.keys(patch).length){
-      patch.updatedAt=now();
-      await patchJson(`companies/${companyCode}/attendance/${yyyyMM}/${e.workerId}/${dateKey}`,patch);
+    await patchJson(`companies/${companyCode}/errors/${yyyyMM}/${id}`,{
+      status,
+      approvedBy:currentUser.uid,
+      approvedAt:now(),
+      updatedAt:now()
+    });
+
+    if(e&&e.workerId&&e.date){
+      const dateKey=keyFromDateText(e.date);
+      const patch={};
+
+      if(e.type==="location_difference") patch.locationApproval=status;
+      if(e.type==="late") patch.late=status==="approved";
+      if(e.type==="early_leave") patch.earlyLeave=status==="approved";
+      if(e.type==="absence") patch.absence=status==="approved";
+      if(e.type==="missing_out_next_day") patch.approvalStatus=status;
+      if(e.type==="long_working") patch.approvalStatus=status;
+      if(e.type==="out_without_in") patch.approvalStatus=status;
+      if(e.type==="double_in") patch.approvalStatus=status;
+
+      if(Object.keys(patch).length){
+        patch.updatedAt=now();
+        await patchJson(`companies/${companyCode}/attendance/${yyyyMM}/${e.workerId}/${dateKey}`,patch);
+      }
     }
-  }
 
-  await loadErrors();
+    await loadErrors();
+  }catch(e){
+    alert(e.message);
+  }
 };
 
-function csvEscape(v){const s=String(v??"");return `"${s.replaceAll('"','""')}"`}
+function csvEscape(v){
+  const s=String(v??"");
+  return `"${s.replaceAll('"','""')}"`;
+}
 function downloadCsv(filename,rows){
   const csv=rows.map(r=>r.map(csvEscape).join(",")).join("\n");
   const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
@@ -567,18 +1100,17 @@ function downloadCsv(filename,rows){
   a.click();
   URL.revokeObjectURL(url);
 }
-function sumReqMinutes(reqs,type){
-  return reqs.filter(r=>r.type===type).reduce((sum,r)=>{
-    if(!r.startTime||!r.endTime) return sum;
-    const [sh,sm]=r.startTime.split(":").map(Number);
-    const [eh,em]=r.endTime.split(":").map(Number);
-    return sum+Math.max(0,(eh*60+em)-(sh*60+sm));
-  },0);
-}
 function countNestedAttendance(att){
   let count=0;
   for(const days of Object.values(att||{})) count+=Object.keys(days||{}).length;
   return count;
+}
+function sumReqMinutes(reqs,type){
+  return reqs.filter(r=>r.type===type).reduce((sum,r)=>sum+requestMinutes(r),0);
+}
+function withinPeriod(dateText,start,end){
+  if(!dateText) return false;
+  return dateText>=start && dateText<=end;
 }
 
 async function buildCloseRows(yyyyMM){
@@ -586,36 +1118,55 @@ async function buildCloseRows(yyyyMM){
   const requests=await getJson(`companies/${companyCode}/requests/${yyyyMM}`) || {};
   const approvedRequests=Object.values(requests||{}).filter(r=>r.status==="approved");
 
+  const start=$("periodStart").value;
+  const end=$("periodEnd").value;
   const header=["会社名","対象期間","社員コード","氏名","日付","出勤","退勤","出勤GPS","退勤GPS","休憩","実働","早出","残業","休日出勤","遅刻","早退","欠勤","承認状況","備考"];
-  const period=`${$("periodStart").value}〜${$("periodEnd").value}`;
+  const period=`${start}〜${end}`;
   const rows=[header];
   latestRows=[];
 
   for(const [workerId,days] of Object.entries(attendance)){
     for(const [dateKey,row] of Object.entries(days||{})){
+      const date=row.date||ymdTextFromKey(dateKey);
+      if(!withinPeriod(date,start,end)) continue;
+
       const dayReqs=approvedRequests.filter(r=>r.workerId===workerId && keyFromDateText(r.date)===dateKey);
-      const early=sumReqMinutes(dayReqs,"early_work");
-      const overtime=sumReqMinutes(dayReqs,"overtime");
-      const holiday=sumReqMinutes(dayReqs,"holiday_work");
+      const early=Number(row.earlyWorkMinutes||0)+sumReqMinutes(dayReqs,"early_work");
+      const overtime=Number(row.overtimeMinutes||0)+sumReqMinutes(dayReqs,"overtime");
+      const holiday=Number(row.holidayWorkMinutes||0)+sumReqMinutes(dayReqs,"holiday_work");
 
       rows.push([
-        companyInfo.companyName||companyCode,period,row.workerCode||workerId,row.workerName||"",
-        row.date||ymdTextFromKey(dateKey),row.inTime||"",row.outTime||"",
+        companyInfo.companyName||companyCode,
+        period,
+        row.workerCode||workerId,
+        row.workerName||"",
+        date,
+        row.inTime||"",
+        row.outTime||"",
         row.inGps?`${row.inGps.lat},${row.inGps.lng}`:"",
         row.outGps?`${row.outGps.lat},${row.outGps.lng}`:"",
-        row.breakMinutes||0,row.workMinutes||0,early,overtime,holiday,
-        row.late?"あり":"",row.earlyLeave?"あり":"",row.absence?"あり":"",
-        row.approvalStatus||row.locationApproval||"",row.note||""
+        row.breakMinutes||0,
+        row.workMinutes||0,
+        early,
+        overtime,
+        holiday,
+        row.late?"あり":"",
+        row.earlyLeave?"あり":"",
+        row.absence?"あり":"",
+        row.approvalStatus||row.locationApproval||"",
+        row.note||""
       ]);
 
       latestRows.push({workerId,dateKey,row,early,overtime,holiday});
     }
   }
+
   return rows;
 }
 
 function buildPrintDetails(){
   const byWorker={};
+
   for(const item of latestRows){
     if(!byWorker[item.workerId]) byWorker[item.workerId]=[];
     byWorker[item.workerId].push(item);
@@ -630,14 +1181,18 @@ function buildPrintDetails(){
     html+=`<div style="page-break-after:always;">
       <h2>勤怠明細</h2>
       <p>
-        会社名：${companyInfo.companyName||companyCode}<br>
-        氏名：${first.workerName||""}<br>
-        社員コード：${first.workerCode||workerId}<br>
-        対象期間：${$("periodStart").value}〜${$("periodEnd").value}
+        会社名：${escapeHtml(companyInfo.companyName||companyCode)}<br>
+        氏名：${escapeHtml(first.workerName||"")}<br>
+        社員コード：${escapeHtml(first.workerCode||workerId)}<br>
+        対象期間：${escapeHtml($("periodStart").value)}〜${escapeHtml($("periodEnd").value)}
       </p>
-      <table><thead><tr>
-      <th>日付</th><th>出勤</th><th>退勤</th><th>休憩</th><th>実働</th><th>早出</th><th>残業</th><th>休日出勤</th><th>遅刻</th><th>早退</th><th>欠勤</th><th>備考</th>
-      </tr></thead><tbody>`;
+      <table>
+        <thead>
+          <tr>
+            <th>日付</th><th>出勤</th><th>退勤</th><th>休憩</th><th>実働</th><th>早出</th><th>残業</th><th>休日出勤</th><th>遅刻</th><th>早退</th><th>欠勤</th><th>備考</th>
+          </tr>
+        </thead>
+        <tbody>`;
 
     for(const item of items.sort((a,b)=>a.dateKey.localeCompare(b.dateKey))){
       const r=item.row;
@@ -651,35 +1206,80 @@ function buildPrintDetails(){
       if(r.earlyLeave) earlyLeaveCount++;
 
       html+=`<tr>
-        <td>${r.date||ymdTextFromKey(item.dateKey)}</td><td>${r.inTime||""}</td><td>${r.outTime||""}</td>
-        <td>${r.breakMinutes||0}</td><td>${minutesText(r.workMinutes||0)}</td>
-        <td>${item.early||0}</td><td>${item.overtime||0}</td><td>${item.holiday||0}</td>
-        <td>${r.late?"あり":""}</td><td>${r.earlyLeave?"あり":""}</td><td>${r.absence?"あり":""}</td><td>${r.note||""}</td>
+        <td>${escapeHtml(r.date||ymdTextFromKey(item.dateKey))}</td>
+        <td>${escapeHtml(r.inTime||"")}</td>
+        <td>${escapeHtml(r.outTime||"")}</td>
+        <td>${r.breakMinutes||0}</td>
+        <td>${minutesText(r.workMinutes||0)}</td>
+        <td>${item.early||0}</td>
+        <td>${item.overtime||0}</td>
+        <td>${item.holiday||0}</td>
+        <td>${r.late?"あり":""}</td>
+        <td>${r.earlyLeave?"あり":""}</td>
+        <td>${r.absence?"あり":""}</td>
+        <td>${escapeHtml(r.note||"")}</td>
       </tr>`;
     }
 
     html+=`</tbody></table>
       <h3>月合計</h3>
       <p>
-      出勤日数：${workDays}<br>
-      欠勤日数：${absence}<br>
-      実働合計：${minutesText(totalWork)}<br>
-      休憩合計：${minutesText(totalBreak)}<br>
-      承認済み残業合計：${minutesText(totalOver)}<br>
-      休日出勤合計：${minutesText(totalHoliday)}<br>
-      遅刻回数：${lateCount}<br>
-      早退回数：${earlyLeaveCount}
+        出勤日数：${workDays}<br>
+        欠勤日数：${absence}<br>
+        実働合計：${minutesText(totalWork)}<br>
+        休憩合計：${minutesText(totalBreak)}<br>
+        承認済み残業合計：${minutesText(totalOver)}<br>
+        休日出勤合計：${minutesText(totalHoliday)}<br>
+        遅刻回数：${lateCount}<br>
+        早退回数：${earlyLeaveCount}
       </p>
     </div>`;
   }
 
-  $("printArea").innerHTML=html;
+  $("printArea").innerHTML=html || "<p>印刷対象データがありません。</p>";
   $("printArea").classList.remove("hidden");
+}
+
+async function deletePeriodData(yyyyMM,start,end){
+  const attendance=await getJson(`companies/${companyCode}/attendance/${yyyyMM}`) || {};
+  const requests=await getJson(`companies/${companyCode}/requests/${yyyyMM}`) || {};
+  const errors=await getJson(`companies/${companyCode}/errors/${yyyyMM}`) || {};
+
+  let deletedAttendanceCount=0,deletedRequestCount=0,deletedErrorCount=0;
+
+  for(const [workerId,days] of Object.entries(attendance)){
+    for(const [dateKey,row] of Object.entries(days||{})){
+      const date=row.date||ymdTextFromKey(dateKey);
+      if(withinPeriod(date,start,end)){
+        await deleteJson(`companies/${companyCode}/attendance/${yyyyMM}/${workerId}/${dateKey}`);
+        deletedAttendanceCount++;
+      }
+    }
+  }
+
+  for(const [id,r] of Object.entries(requests)){
+    if(withinPeriod(r.date,start,end)){
+      await deleteJson(`companies/${companyCode}/requests/${yyyyMM}/${id}`);
+      deletedRequestCount++;
+    }
+  }
+
+  for(const [id,e] of Object.entries(errors)){
+    if(withinPeriod(e.date,start,end)){
+      await deleteJson(`companies/${companyCode}/errors/${yyyyMM}/${id}`);
+      deletedErrorCount++;
+    }
+  }
+
+  return {deletedAttendanceCount,deletedRequestCount,deletedErrorCount};
 }
 
 async function closeAndCsv(){
   const yyyyMM=ymFromMonth($("closeMonth").value);
-  if(!yyyyMM||!$("periodStart").value||!$("periodEnd").value){
+  const start=$("periodStart").value;
+  const end=$("periodEnd").value;
+
+  if(!yyyyMM||!start||!end){
     setMsg("closeMsg","対象月、期間開始、期間終了を入力してください。",true);
     return;
   }
@@ -695,36 +1295,92 @@ async function closeAndCsv(){
   try{
     setMsg("closeMsg","処理中...");
 
-    const attendance=await getJson(`companies/${companyCode}/attendance/${yyyyMM}`) || {};
-    const requests=await getJson(`companies/${companyCode}/requests/${yyyyMM}`) || {};
-    const errors=await getJson(`companies/${companyCode}/errors/${yyyyMM}`) || {};
-    const attendanceCount=countNestedAttendance(attendance);
-    const requestCount=Object.keys(requests).length;
-    const errorCount=Object.keys(errors).length;
-
     const rows=await buildCloseRows(yyyyMM);
-    downloadCsv(`smart-kintai_${companyCode}_${yyyyMM}.csv`,rows);
+    downloadCsv(`smart-kintai_${companyCode}_${yyyyMM}_${start}_${end}.csv`,rows);
     buildPrintDetails();
 
-    await postJson(`companies/${companyCode}/logs/closures`,{
-      periodStart:$("periodStart").value,periodEnd:$("periodEnd").value,yyyyMM,
-      csvExported:true,detailsPrinted:true,closedBy:currentUser.uid,closedAt:now(),
-      attendanceCount,requestCount,errorCount
-    });
+    const deleted=await deletePeriodData(yyyyMM,start,end);
 
-    await deleteJson(`companies/${companyCode}/attendance/${yyyyMM}`);
-    await deleteJson(`companies/${companyCode}/requests/${yyyyMM}`);
-    await deleteJson(`companies/${companyCode}/errors/${yyyyMM}`);
+    await postJson(`companies/${companyCode}/logs/closures`,{
+      periodStart:start,
+      periodEnd:end,
+      yyyyMM,
+      csvExported:true,
+      detailsPrinted:true,
+      closedBy:currentUser.uid,
+      closedAt:now(),
+      attendanceCount:deleted.deletedAttendanceCount,
+      requestCount:deleted.deletedRequestCount,
+      errorCount:deleted.deletedErrorCount
+    });
 
     await postJson(`companies/${companyCode}/logs/cleanup`,{
-      periodStart:$("periodStart").value,periodEnd:$("periodEnd").value,yyyyMM,
-      deletedAttendanceCount:attendanceCount,deletedRequestCount:requestCount,deletedErrorCount:errorCount,
-      csvExported:true,deleted:true,deletedBy:currentUser.uid,deletedAt:now()
+      periodStart:start,
+      periodEnd:end,
+      yyyyMM,
+      deletedAttendanceCount:deleted.deletedAttendanceCount,
+      deletedRequestCount:deleted.deletedRequestCount,
+      deletedErrorCount:deleted.deletedErrorCount,
+      csvExported:true,
+      deleted:true,
+      deletedBy:currentUser.uid,
+      deletedAt:now()
     });
 
-    setMsg("closeMsg","CSV出力と締め処理が完了しました。印刷用明細も作成済みです。");
+    setMsg("closeMsg",
+      "CSV出力と締め処理が完了しました。\n"+
+      `削除件数：勤怠 ${deleted.deletedAttendanceCount}件 / 申請 ${deleted.deletedRequestCount}件 / エラー ${deleted.deletedErrorCount}件\n`+
+      "印刷用明細も作成済みです。"
+    );
+
   }catch(e){
     setMsg("closeMsg",e.message||"締め処理に失敗しました。",true);
+  }
+}
+
+async function loadLogs(){
+  try{
+    const edits=await getJson(`companies/${companyCode}/logs/edits`) || {};
+    const closures=await getJson(`companies/${companyCode}/logs/closures`) || {};
+    const cleanup=await getJson(`companies/${companyCode}/logs/cleanup`) || {};
+
+    let html=`<h3>締め履歴</h3><table><thead><tr><th>期間</th><th>対象月</th><th>CSV</th><th>明細</th><th>件数</th><th>日時</th></tr></thead><tbody>`;
+    for(const c of Object.values(closures).sort((a,b)=>(b.closedAt||0)-(a.closedAt||0))){
+      html+=`<tr>
+        <td>${escapeHtml(c.periodStart||"")}〜${escapeHtml(c.periodEnd||"")}</td>
+        <td>${escapeHtml(c.yyyyMM||"")}</td>
+        <td>${c.csvExported?"出力済み":""}</td>
+        <td>${c.detailsPrinted?"作成済み":""}</td>
+        <td>勤怠 ${c.attendanceCount||0} / 申請 ${c.requestCount||0} / エラー ${c.errorCount||0}</td>
+        <td>${c.closedAt?new Date(c.closedAt).toLocaleString():""}</td>
+      </tr>`;
+    }
+    html+=`</tbody></table>`;
+
+    html+=`<h3>削除履歴</h3><table><thead><tr><th>期間</th><th>対象月</th><th>削除件数</th><th>日時</th></tr></thead><tbody>`;
+    for(const c of Object.values(cleanup).sort((a,b)=>(b.deletedAt||0)-(a.deletedAt||0))){
+      html+=`<tr>
+        <td>${escapeHtml(c.periodStart||"")}〜${escapeHtml(c.periodEnd||"")}</td>
+        <td>${escapeHtml(c.yyyyMM||"")}</td>
+        <td>勤怠 ${c.deletedAttendanceCount||0} / 申請 ${c.deletedRequestCount||0} / エラー ${c.deletedErrorCount||0}</td>
+        <td>${c.deletedAt?new Date(c.deletedAt).toLocaleString():""}</td>
+      </tr>`;
+    }
+    html+=`</tbody></table>`;
+
+    html+=`<h3>編集履歴</h3><table><thead><tr><th>対象</th><th>理由</th><th>日時</th></tr></thead><tbody>`;
+    for(const e of Object.values(edits).sort((a,b)=>(b.editedAt||0)-(a.editedAt||0))){
+      html+=`<tr>
+        <td>${escapeHtml(e.targetPath||"")}</td>
+        <td>${escapeHtml(e.reason||"")}</td>
+        <td>${e.editedAt?new Date(e.editedAt).toLocaleString():""}</td>
+      </tr>`;
+    }
+    html+=`</tbody></table>`;
+
+    $("logsList").innerHTML=html;
+  }catch(e){
+    $("logsList").innerHTML=`<p class="ng">${escapeHtml(e.message)}</p>`;
   }
 }
 
@@ -743,24 +1399,36 @@ function setDefaultMonths(){
 }
 
 $("saveWorkerBtn").addEventListener("click",saveWorker);
+$("clearWorkerBtn").addEventListener("click",clearWorkerForm);
+$("saveCompanyBtn").addEventListener("click",saveCompanySettings);
+
 $("makeWeekdayBtn").addEventListener("click",()=>makeCalendar("weekday"));
 $("makeAllWorkBtn").addEventListener("click",()=>makeCalendar("allWork"));
 $("makeAllHolidayBtn").addEventListener("click",()=>makeCalendar("allHoliday"));
 $("calMonth").addEventListener("change",loadCalendar);
+
 $("loadAttendanceBtn").addEventListener("click",loadAttendance);
+$("detectErrorsBtn").addEventListener("click",detectAttendanceErrors);
+
 $("loadRequestsBtn").addEventListener("click",loadRequests);
 $("loadErrorsBtn").addEventListener("click",loadErrors);
+
 $("closeBtn").addEventListener("click",closeAndCsv);
 $("printBtn").addEventListener("click",()=>{
   if($("printArea").innerHTML.trim()) window.print();
   else alert("先に締めCSVを実行して明細を作成してください。");
 });
+
+$("loadLogsBtn").addEventListener("click",loadLogs);
+
 $("logoutBtn").addEventListener("click",async()=>{
   await signOut(auth);
   localStorage.removeItem("smartKintaiAdminCompanyCode");
   location.href="index.html";
 });
+
 $("backBtn").addEventListener("click",()=>location.href="index.html");
+
 document.querySelectorAll(".tabs button").forEach(btn=>{
   btn.addEventListener("click",()=>switchTab(btn.dataset.tab));
 });
