@@ -229,6 +229,10 @@
       background: #fee2e2;
       color: #991b1b;
     }
+
+    .hide {
+      display: none;
+    }
   </style>
 </head>
 
@@ -264,27 +268,37 @@
   <section class="card">
     <h2>申請</h2>
     <p class="small">
-      早出・残業・休日出勤は申請制です。承認されたものだけ集計に反映されます。
+      早出・残業・休日出勤・有給は申請制です。承認されたものだけ集計に反映されます。
     </p>
 
     <label>申請種別</label>
     <select id="requestType">
       <option value="early">早出申請</option>
       <option value="overtime">残業申請</option>
-      <option value="holiday">休日出勤申請</option>
+      <option value="holidayWork">休日出勤申請</option>
       <option value="correction">打刻修正申請</option>
+      <option value="paidLeave">有給申請</option>
     </select>
+
+    <div id="paidLeaveBox" class="hide">
+      <label>有給区分</label>
+      <select id="paidLeaveKind">
+        <option value="full">1日有給</option>
+        <option value="am">午前有給</option>
+        <option value="pm">午後有給</option>
+      </select>
+    </div>
 
     <div class="row">
       <div>
         <label>日付</label>
         <input id="requestDate" type="date">
       </div>
-      <div>
+      <div id="requestStartBox">
         <label>開始時刻</label>
         <input id="requestStart" type="time">
       </div>
-      <div>
+      <div id="requestEndBox">
         <label>終了時刻</label>
         <input id="requestEnd" type="time">
       </div>
@@ -330,7 +344,7 @@
   </section>
 
   <section class="card">
-    <h2>申請履歴 / 打刻エラー</h2>
+    <h2>申請履歴 / 確認事項</h2>
     <div id="historyBox" class="small">読み込み中...</div>
   </section>
 
@@ -749,6 +763,22 @@
     }
   }
 
+  function updateRequestFormByType() {
+    const type = $("requestType").value;
+
+    if (type === "paidLeave") {
+      $("paidLeaveBox").classList.remove("hide");
+      $("requestStartBox").classList.add("hide");
+      $("requestEndBox").classList.add("hide");
+      $("requestStart").value = "";
+      $("requestEnd").value = "";
+    } else {
+      $("paidLeaveBox").classList.add("hide");
+      $("requestStartBox").classList.remove("hide");
+      $("requestEndBox").classList.remove("hide");
+    }
+  }
+
   async function sendRequest() {
     try {
       const type = $("requestType").value;
@@ -756,15 +786,23 @@
       const startTime = $("requestStart").value;
       const endTime = $("requestEnd").value;
       const reason = clean($("requestReason").value);
+      const paidLeaveKind = $("paidLeaveKind").value;
 
-      if (!date || !startTime || !endTime || !reason) {
-        showStatus("requestStatus", "日付・開始時刻・終了時刻・理由を入力してください。", "ng");
+      if (!date || !reason) {
+        showStatus("requestStatus", "日付と理由を入力してください。", "ng");
         return;
       }
 
-      if (endTime <= startTime) {
-        showStatus("requestStatus", "終了時刻は開始時刻より後にしてください。", "ng");
-        return;
+      if (type !== "paidLeave") {
+        if (!startTime || !endTime) {
+          showStatus("requestStatus", "開始時刻と終了時刻を入力してください。", "ng");
+          return;
+        }
+
+        if (endTime <= startTime) {
+          showStatus("requestStatus", "終了時刻は開始時刻より後にしてください。", "ng");
+          return;
+        }
       }
 
       $("sendRequestBtn").disabled = true;
@@ -773,20 +811,23 @@
       const month = ymKey(date);
       const reqRef = push(ref(db, `companies/${companyCode}/requests/${month}`));
 
-      await set(reqRef, {
+      const data = {
         type,
         employeeId,
         employeeCode: employeeData.code || employeeId,
         employeeName: employeeData.name || "",
         date,
-        startTime,
-        endTime,
+        startTime: type === "paidLeave" ? "" : startTime,
+        endTime: type === "paidLeave" ? "" : endTime,
+        paidLeaveKind: type === "paidLeave" ? paidLeaveKind : "",
         reason,
         status: "pending",
         createdAt: nowIso(),
         decidedAt: "",
         decidedBy: ""
-      });
+      };
+
+      await set(reqRef, data);
 
       $("requestReason").value = "";
       showStatus("requestStatus", "申請しました。", "ok");
@@ -855,12 +896,20 @@
     `).join("") || `<tr><td colspan="8">データがありません。</td></tr>`;
   }
 
-  function labelType(type) {
+  function labelPaidLeave(kind) {
+    if (kind === "am") return "午前有給";
+    if (kind === "pm") return "午後有給";
+    return "1日有給";
+  }
+
+  function labelType(type, paidLeaveKind) {
     const map = {
       early: "早出申請",
       overtime: "残業申請",
+      holidayWork: "休日出勤申請",
       holiday: "休日出勤申請",
-      correction: "打刻修正申請"
+      correction: "打刻修正申請",
+      paidLeave: `有給申請（${labelPaidLeave(paidLeaveKind)}）`
     };
     return map[type] || type || "";
   }
@@ -895,7 +944,7 @@
             <strong>${r.date || ""}</strong>
             <span class="pill ${r.status || "pending"}">${labelStatus(r.status)}</span>
           </p>
-          <p>${labelType(r.type)} ${r.startTime || ""}〜${r.endTime || ""}</p>
+          <p>${labelType(r.type, r.paidLeaveKind)} ${r.startTime || ""}${r.endTime ? "〜" + r.endTime : ""}</p>
           <p>${r.reason || ""}</p>
         </div>
       `),
@@ -964,6 +1013,7 @@
       $("requestDate").value = todayDate();
       $("monthInput").value = currentMonthInput();
 
+      updateRequestFormByType();
       await reloadAll();
 
     } catch (e) {
@@ -986,6 +1036,7 @@
   clockOutBtn.addEventListener("touchend", cancelClockOutHold);
   clockOutBtn.addEventListener("touchcancel", cancelClockOutHold);
 
+  $("requestType").addEventListener("change", updateRequestFormByType);
   $("sendRequestBtn").addEventListener("click", sendRequest);
   $("reloadBtn").addEventListener("click", reloadAll);
 
