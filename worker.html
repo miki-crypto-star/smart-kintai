@@ -768,11 +768,11 @@
       const snap = await get(attRef);
       const current = snap.exists() ? snap.val() : null;
 
-      if (current?.clockInAt) {
-        await createError("double_in", "二重出勤です。すでに出勤打刻があります。", null, dateStr);
-        showStatus("clockStatus", "すでに出勤打刻があります。管理者画面に確認事項として表示しました。", "warn");
-        await reloadAll();
-        return;
+   if (current?.clockInAt) {
+  showStatus("clockStatus", "すでに出勤済みです。", "warn");
+  await reloadAll();
+  return;
+}
       }
 
       const gps = await getGps();
