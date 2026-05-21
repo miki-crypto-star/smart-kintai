@@ -768,11 +768,11 @@
       const snap = await get(attRef);
       const current = snap.exists() ? snap.val() : null;
 
-   if (current?.clockInAt) {
-  showStatus("clockStatus", "すでに出勤済みです。", "warn");
-  await reloadAll();
-  return;
-}
+ 　　  if (current?.clockInAt) {
+ 　　 showStatus("clockStatus", "すでに出勤済みです。", "warn");
+ 　　 await reloadAll();
+ 　　 return;
+　　　}
       }
 
       const gps = await getGps();
