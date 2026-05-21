@@ -1010,22 +1010,17 @@
     };
   }
 
-  function getAttendanceCalc(a) {
-    if (!a || (!a.clockInAt && !a.clockOutAt)) {
-      return {
-        workMinutes: 0,
-        breakMinutes: 0,
-        actualMinutes: 0
-      };
-    }
-
-    if (a.manualEdited === true) {
-      return calcAttendance(a.clockInAt, a.clockOutAt, Number(a.breakMinutes || 0));
-    }
-
-    return calcAttendance(a.clockInAt, a.clockOutAt, null);
+ function getAttendanceCalc(a) {
+  if (!a || (!a.clockInAt && !a.clockOutAt)) {
+    return {
+      workMinutes: 0,
+      breakMinutes: 0,
+      actualMinutes: 0
+    };
   }
 
+  return calcAttendance(a.clockInAt, a.clockOutAt, null);
+}
   async function loadToday() {
     const date = todayDate();
     const month = ymKey(date);
