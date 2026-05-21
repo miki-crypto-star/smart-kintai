@@ -765,14 +765,14 @@
       const key = ymdKey(dateStr);
       const path = `companies/${companyCode}/attendance/${month}/${employeeId}/${key}`;
       const attRef = ref(db, path);
+
       const snap = await get(attRef);
       const current = snap.exists() ? snap.val() : null;
 
- 　　  if (current?.clockInAt) {
- 　　 showStatus("clockStatus", "すでに出勤済みです。", "warn");
- 　　 await reloadAll();
- 　　 return;
-　　　}
+      if (current?.clockInAt) {
+        showStatus("clockStatus", "すでに出勤済みです。", "warn");
+        await reloadAll();
+        return;
       }
 
       const gps = await getGps();
@@ -1036,7 +1036,6 @@
     const map = {
       out_without_in: "出勤なし退勤",
       missing_out_next_day: "退勤なし翌日",
-      double_in: "二重出勤",
       long_shift_no_out: "長時間未退勤",
       location_mismatch: "場所確認",
       late: "遅刻候補",
@@ -1059,7 +1058,9 @@
       : [];
 
     const errors = errSnap.exists()
-      ? Object.entries(errSnap.val()).map(([id, v]) => ({ id, ...v })).filter(e => e.employeeId === employeeId)
+      ? Object.entries(errSnap.val())
+          .map(([id, v]) => ({ id, ...v }))
+          .filter(e => e.employeeId === employeeId && e.type !== "double_in")
       : [];
 
     const html = [
