@@ -50,11 +50,6 @@
       font-size: 18px;
     }
 
-    h3 {
-      margin: 14px 0 8px;
-      font-size: 16px;
-    }
-
     .small {
       font-size: 13px;
       color: #6b7280;
@@ -143,25 +138,11 @@
       cursor: not-allowed;
     }
 
-    button.dark {
-      background: #111827;
-    }
-
-    button.gray {
-      background: #6b7280;
-    }
-
-    button.red {
-      background: #dc2626;
-    }
-
-    button.green {
-      background: #16a34a;
-    }
-
-    button.orange {
-      background: #d97706;
-    }
+    button.dark { background: #111827; }
+    button.gray { background: #6b7280; }
+    button.red { background: #dc2626; }
+    button.green { background: #16a34a; }
+    button.orange { background: #d97706; }
 
     .btnRow {
       display: flex;
@@ -237,30 +218,11 @@
       background: #e5e7eb;
     }
 
-    .pending {
-      background: #fef3c7;
-      color: #92400e;
-    }
-
-    .approved {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .rejected {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .activePill {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .inactivePill {
-      background: #fee2e2;
-      color: #991b1b;
-    }
+    .pending { background: #fef3c7; color: #92400e; }
+    .approved { background: #dcfce7; color: #166534; }
+    .rejected { background: #fee2e2; color: #991b1b; }
+    .activePill { background: #dcfce7; color: #166534; }
+    .inactivePill { background: #fee2e2; color: #991b1b; }
 
     .calendarGrid {
       display: grid;
@@ -507,7 +469,7 @@
           <button id="allHolidayBtn" class="orange">全日休日</button>
         </div>
         <div>
-          <button id="saveCalendarBtn" class="blue">保存</button>
+          <button id="saveCalendarBtn">保存</button>
         </div>
       </div>
 
@@ -835,6 +797,7 @@
   function labelStatus(status) {
     if (status === "approved") return "承認済み";
     if (status === "rejected") return "否決";
+    if (status === "fixed") return "修正済み";
     return "承認待ち";
   }
 
@@ -853,7 +816,6 @@
     const map = {
       out_without_in: "出勤なし退勤",
       missing_out_next_day: "退勤なし翌日",
-      double_in: "二重出勤",
       long_shift_no_out: "長時間未退勤",
       location_mismatch: "場所確認",
       late: "遅刻候補",
@@ -882,10 +844,12 @@
   function dateList(start, end) {
     const list = [];
     const d = new Date(start);
+
     while (d <= end) {
       list.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
       d.setDate(d.getDate() + 1);
     }
+
     return list;
   }
 
@@ -902,7 +866,6 @@
 
     const day = Number(closeDay);
     const end = new Date(y, m - 1, Math.min(day, new Date(y, m, 0).getDate()));
-    const prev = new Date(y, m - 2, 1);
     const prevLast = new Date(y, m - 1, 0).getDate();
     const startDay = Math.min(day + 1, prevLast);
     const start = new Date(y, m - 2, startDay);
@@ -943,6 +906,7 @@
 
   function approvedMinutes(requestsByMonth, employeeId, date, type) {
     let total = 0;
+
     Object.values(requestsByMonth).forEach(monthObj => {
       Object.values(monthObj || {}).forEach(r => {
         if (r.employeeId === employeeId && r.date === date && r.type === type && r.status === "approved") {
@@ -950,11 +914,13 @@
         }
       });
     });
+
     return total;
   }
 
   function hasApprovedRequest(requestsByMonth, employeeId, date, type) {
     let found = false;
+
     Object.values(requestsByMonth).forEach(monthObj => {
       Object.values(monthObj || {}).forEach(r => {
         if (r.employeeId === employeeId && r.date === date && r.type === type && r.status === "approved") {
@@ -962,11 +928,13 @@
         }
       });
     });
+
     return found;
   }
 
   function requestText(requestsByMonth, employeeId, date) {
     const list = [];
+
     Object.values(requestsByMonth).forEach(monthObj => {
       Object.values(monthObj || {}).forEach(r => {
         if (r.employeeId === employeeId && r.date === date) {
@@ -974,24 +942,31 @@
         }
       });
     });
+
     return list.join(" / ");
   }
 
   function lateMinutes(employee, attendance, dayType, paidLeave) {
     if (paidLeave || dayType !== "workday" || !attendance?.clockInAt) return 0;
+
     const start = employee.workStart || companyData.settings?.work?.defaultStart || "08:00";
     const actual = timeToMinutes(hm(attendance.clockInAt));
     const scheduled = timeToMinutes(start);
+
     if (actual == null || scheduled == null) return 0;
+
     return Math.max(0, actual - scheduled);
   }
 
   function earlyLeaveMinutes(employee, attendance, dayType, paidLeave) {
     if (paidLeave || dayType !== "workday" || !attendance?.clockOutAt) return 0;
+
     const end = employee.workEnd || companyData.settings?.work?.defaultEnd || "17:00";
     const actual = timeToMinutes(hm(attendance.clockOutAt));
     const scheduled = timeToMinutes(end);
+
     if (actual == null || scheduled == null) return 0;
+
     return Math.max(0, scheduled - actual);
   }
 
@@ -1010,16 +985,45 @@
 
   function calcAttendance(clockInIso, clockOutIso, manualBreak = null) {
     if (!clockInIso || !clockOutIso) {
-      return { workMinutes: 0, breakMinutes: Number(manualBreak || 0), actualMinutes: 0 };
+      return {
+        workMinutes: 0,
+        breakMinutes: Number(manualBreak || 0),
+        actualMinutes: 0
+      };
     }
 
     const start = new Date(clockInIso).getTime();
     const end = new Date(clockOutIso).getTime();
     const workMinutes = Math.max(0, Math.round((end - start) / 60000));
-    const breakMinutes = manualBreak == null ? calcBreakMinutes(workMinutes) : Number(manualBreak || 0);
+
+    const breakMinutes =
+      manualBreak === null || manualBreak === undefined
+        ? calcBreakMinutes(workMinutes)
+        : Number(manualBreak || 0);
+
     const actualMinutes = Math.max(0, workMinutes - breakMinutes);
 
-    return { workMinutes, breakMinutes, actualMinutes };
+    return {
+      workMinutes,
+      breakMinutes,
+      actualMinutes
+    };
+  }
+
+  function getAttendanceCalc(a) {
+    if (!a || (!a.clockInAt && !a.clockOutAt)) {
+      return {
+        workMinutes: 0,
+        breakMinutes: 0,
+        actualMinutes: 0
+      };
+    }
+
+    if (a.manualEdited === true) {
+      return calcAttendance(a.clockInAt, a.clockOutAt, Number(a.breakMinutes || 0));
+    }
+
+    return calcAttendance(a.clockInAt, a.clockOutAt, null);
   }
 
   async function loadToday() {
@@ -1032,14 +1036,16 @@
 
     $("todayBody").innerHTML = employees.map(e => {
       const a = monthData?.[e.id]?.[key] || {};
+      const calc = getAttendanceCalc(a);
+
       return `
         <tr>
           <td>${e.code || e.id}</td>
           <td>${e.name || ""}</td>
           <td>${hm(a.clockInAt) || "-"}</td>
           <td>${hm(a.clockOutAt) || "-"}</td>
-          <td>${a.breakMinutes || 0}分</td>
-          <td>${minToHHMM(a.actualMinutes || 0)}</td>
+          <td>${calc.breakMinutes || 0}分</td>
+          <td>${minToHHMM(calc.actualMinutes || 0)}</td>
           <td>${labelLocationApproval(a.locationApproval)}</td>
           <td>${mapLink(a.inGps)}</td>
           <td>${mapLink(a.outGps)}</td>
@@ -1069,6 +1075,7 @@
         const month = ymKey(date);
         const key = ymdKey(date);
         const a = attendanceByMonth?.[month]?.[e.id]?.[key] || null;
+        const calc = getAttendanceCalc(a);
         const dayType = getDayType(date);
         const paidLeave = hasApprovedRequest(requestsByMonth, e.id, date, "paid_leave");
 
@@ -1090,8 +1097,9 @@
           clockOut: hm(a?.clockOutAt),
           inGps: a?.inGps || null,
           outGps: a?.outGps || null,
-          breakMinutes: a?.breakMinutes || 0,
-          actualMinutes: a?.actualMinutes || 0,
+          breakMinutes: calc.breakMinutes,
+          actualMinutes: calc.actualMinutes,
+          workMinutes: calc.workMinutes,
           early,
           overtime,
           holidayWork,
@@ -1206,7 +1214,7 @@
     const key = ymdKey(r.date);
     const clockInAt = `${r.date}T${r.startTime}:00`;
     const clockOutAt = `${r.date}T${r.endTime}:00`;
-    const calc = calcAttendance(clockInAt, clockOutAt);
+    const calc = calcAttendance(clockInAt, clockOutAt, null);
 
     await update(ref(db, `companies/${companyCode}/attendance/${month}/${r.employeeId}/${key}`), {
       date: r.date,
@@ -1218,7 +1226,7 @@
       breakMinutes: calc.breakMinutes,
       workMinutes: calc.workMinutes,
       actualMinutes: calc.actualMinutes,
-      manualEdited: true,
+      manualEdited: false,
       notes: "打刻修正申請を承認して反映",
       updatedAt: nowIso()
     });
@@ -1227,7 +1235,12 @@
   async function loadErrors() {
     const month = ($("errorMonth").value || currentMonthInput()).replace("-", "");
     const snap = await get(ref(db, `companies/${companyCode}/errors/${month}`));
-    const rows = snap.exists() ? Object.entries(snap.val()).map(([id, v]) => ({ id, ...v })) : [];
+
+    const rows = snap.exists()
+      ? Object.entries(snap.val())
+          .map(([id, v]) => ({ id, ...v }))
+          .filter(e => e.type !== "double_in")
+      : [];
 
     rows.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
 
@@ -1311,10 +1324,11 @@
     const key = ymdKey(date);
     const snap = await get(ref(db, `companies/${companyCode}/attendance/${month}/${employeeId}/${key}`));
     const a = snap.exists() ? snap.val() : {};
+    const calc = getAttendanceCalc(a);
 
     $("editClockIn").value = hm(a.clockInAt);
     $("editClockOut").value = hm(a.clockOutAt);
-    $("editBreak").value = a.breakMinutes || 0;
+    $("editBreak").value = calc.breakMinutes || 0;
     $("editLocationApproval").value = a.locationApproval || "none";
     $("editNotes").value = a.notes || "";
 
