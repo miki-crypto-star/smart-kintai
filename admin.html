@@ -308,6 +308,8 @@
               <th>場所確認</th>
               <th>出勤位置</th>
               <th>退勤位置</th>
+              <th>出勤メモ</th>
+              <th>退勤メモ</th>
               <th>備考</th>
             </tr>
           </thead>
@@ -350,6 +352,8 @@
               <th>欠勤</th>
               <th>出勤位置</th>
               <th>退勤位置</th>
+              <th>出勤メモ</th>
+              <th>退勤メモ</th>
               <th>承認状況</th>
               <th>備考</th>
             </tr>
@@ -1010,17 +1014,18 @@
     };
   }
 
- function getAttendanceCalc(a) {
-  if (!a || (!a.clockInAt && !a.clockOutAt)) {
-    return {
-      workMinutes: 0,
-      breakMinutes: 0,
-      actualMinutes: 0
-    };
+  function getAttendanceCalc(a) {
+    if (!a || (!a.clockInAt && !a.clockOutAt)) {
+      return {
+        workMinutes: 0,
+        breakMinutes: 0,
+        actualMinutes: 0
+      };
+    }
+
+    return calcAttendance(a.clockInAt, a.clockOutAt, null);
   }
 
-  return calcAttendance(a.clockInAt, a.clockOutAt, null);
-}
   async function loadToday() {
     const date = todayDate();
     const month = ymKey(date);
@@ -1044,10 +1049,12 @@
           <td>${labelLocationApproval(a.locationApproval)}</td>
           <td>${mapLink(a.inGps)}</td>
           <td>${mapLink(a.outGps)}</td>
+          <td>${a.clockInMemo || ""}</td>
+          <td>${a.clockOutMemo || ""}</td>
           <td>${a.notes || ""}</td>
         </tr>
       `;
-    }).join("") || `<tr><td colspan="10">従業員が登録されていません。</td></tr>`;
+    }).join("") || `<tr><td colspan="12">従業員が登録されていません。</td></tr>`;
 
     bindMapButtons();
   }
@@ -1092,6 +1099,8 @@
           clockOut: hm(a?.clockOutAt),
           inGps: a?.inGps || null,
           outGps: a?.outGps || null,
+          clockInMemo: a?.clockInMemo || "",
+          clockOutMemo: a?.clockOutMemo || "",
           breakMinutes: calc.breakMinutes,
           actualMinutes: calc.actualMinutes,
           workMinutes: calc.workMinutes,
@@ -1134,10 +1143,12 @@
         <td>${r.absent}</td>
         <td>${mapLink(r.inGps)}</td>
         <td>${mapLink(r.outGps)}</td>
+        <td>${r.clockInMemo || ""}</td>
+        <td>${r.clockOutMemo || ""}</td>
         <td>${r.approval}</td>
         <td>${r.notes}</td>
       </tr>
-    `).join("") || `<tr><td colspan="19">データがありません。</td></tr>`;
+    `).join("") || `<tr><td colspan="21">データがありません。</td></tr>`;
 
     bindMapButtons();
   }
@@ -1658,6 +1669,8 @@
       "退勤",
       "出勤GPS",
       "退勤GPS",
+      "出勤メモ",
+      "退勤メモ",
       "休憩",
       "実働",
       "早出",
@@ -1681,6 +1694,8 @@
       r.clockOut,
       gpsText(r.inGps),
       gpsText(r.outGps),
+      r.clockInMemo || "",
+      r.clockOutMemo || "",
       `${r.breakMinutes}分`,
       minToHHMM(r.actualMinutes),
       r.early ? minToHHMM(r.early) : "",
@@ -1725,7 +1740,7 @@
           body { font-family: system-ui, sans-serif; color:#111; }
           h1 { font-size: 20px; }
           h2 { font-size: 16px; margin-top: 28px; border-bottom: 2px solid #111; padding-bottom: 6px; }
-          table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px; }
+          table { width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 8px; }
           th, td { border: 1px solid #ccc; padding: 5px; text-align: left; }
           th { background: #f3f4f6; }
           .page { page-break-after: always; }
@@ -1766,6 +1781,8 @@
                 <th>遅刻</th>
                 <th>早退</th>
                 <th>欠勤</th>
+                <th>出勤メモ</th>
+                <th>退勤メモ</th>
                 <th>備考</th>
               </tr>
             </thead>
@@ -1784,6 +1801,8 @@
                   <td>${r.late ? minToHHMM(r.late) : ""}</td>
                   <td>${r.earlyLeave ? minToHHMM(r.earlyLeave) : ""}</td>
                   <td>${r.absent || ""}</td>
+                  <td>${r.clockInMemo || ""}</td>
+                  <td>${r.clockOutMemo || ""}</td>
                   <td>${r.notes || r.approval || ""}</td>
                 </tr>
               `).join("")}
