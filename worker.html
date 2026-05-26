@@ -259,7 +259,7 @@
       <label>打刻メモ</label>
       <textarea id="clockMemo" placeholder="例：（株）東和 / 〇〇現場 / 〇〇営業所"></textarea>
       <p class="small">
-        出先や現場で打刻する場合は、訪問先・現場名などを入力してください。
+        出先や現場で打刻する場合は、訪問先・現場名などを入力してください。空欄でも打刻できます。
       </p>
     </div>
 
@@ -603,6 +603,18 @@
       breakMinutes,
       actualMinutes
     };
+  }
+
+  function getAttendanceCalc(a) {
+    if (!a || (!a.clockInAt && !a.clockOutAt)) {
+      return {
+        workMinutes: 0,
+        breakMinutes: 0,
+        actualMinutes: 0
+      };
+    }
+
+    return calcAttendance(a.clockInAt, a.clockOutAt);
   }
 
   function getCalendarDay(dateStr) {
@@ -1005,11 +1017,13 @@
       return;
     }
 
+    const calc = getAttendanceCalc(a);
+
     $("todayBox").innerHTML = `
       <p><strong>出勤：</strong>${hm(a.clockInAt) || "-"}</p>
       <p><strong>退勤：</strong>${hm(a.clockOutAt) || "-"}</p>
-      <p><strong>休憩：</strong>${a.breakMinutes || 0}分</p>
-      <p><strong>実働：</strong>${minToHHMM(a.actualMinutes || 0)}</p>
+      <p><strong>休憩：</strong>${calc.breakMinutes || 0}分</p>
+      <p><strong>実働：</strong>${minToHHMM(calc.actualMinutes || 0)}</p>
       <p><strong>場所確認：</strong>${labelLocationApproval(a.locationApproval)}</p>
       <p><strong>出勤メモ：</strong>${a.clockInMemo || ""}</p>
       <p><strong>退勤メモ：</strong>${a.clockOutMemo || ""}</p>
@@ -1026,19 +1040,23 @@
 
     rows.sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
 
-    $("attendanceBody").innerHTML = rows.map(a => `
-      <tr>
-        <td>${a.date || ""}</td>
-        <td>${hm(a.clockInAt) || "-"}</td>
-        <td>${hm(a.clockOutAt) || "-"}</td>
-        <td>${a.breakMinutes || 0}分</td>
-        <td>${minToHHMM(a.actualMinutes || 0)}</td>
-        <td>${labelLocationApproval(a.locationApproval)}</td>
-        <td>${a.clockInMemo || ""}</td>
-        <td>${a.clockOutMemo || ""}</td>
-        <td>${a.notes || ""}</td>
-      </tr>
-    `).join("") || `<tr><td colspan="9">データがありません。</td></tr>`;
+    $("attendanceBody").innerHTML = rows.map(a => {
+      const calc = getAttendanceCalc(a);
+
+      return `
+        <tr>
+          <td>${a.date || ""}</td>
+          <td>${hm(a.clockInAt) || "-"}</td>
+          <td>${hm(a.clockOutAt) || "-"}</td>
+          <td>${calc.breakMinutes || 0}分</td>
+          <td>${minToHHMM(calc.actualMinutes || 0)}</td>
+          <td>${labelLocationApproval(a.locationApproval)}</td>
+          <td>${a.clockInMemo || ""}</td>
+          <td>${a.clockOutMemo || ""}</td>
+          <td>${a.notes || ""}</td>
+        </tr>
+      `;
+    }).join("") || `<tr><td colspan="9">データがありません。</td></tr>`;
   }
 
   function labelType(type) {
